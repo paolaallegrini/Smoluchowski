@@ -100,15 +100,21 @@ class Mesh:
     """
     def matrice_A(this):
         # this.A = this.M + this.D
-        this.A = np.zeros((this.Ns, this.Ns), dtype = np.complex)
+        this.A = np.zeros((this.Ns, this.Ns))#, dtype = np.complex)
 
-        for i in range(1, this.Ns):
-            for j in range(1, this.Ns):
+        for i in range(0, this.Ns):
+            for j in range(0, this.Ns):
                 this.A[i][j] = this.M[i][j] + this.D[i][j]
+                print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
+                
 
 #        for id_s in this.Nodes_inter: #no internal border
 #            this.A[int(id_s) -1][:] = 0
 #            this.A[int(id_s) -1][int(id_s) -1] = 1
+        
+        print('--------Mat_A function--------')
+        print(this.A)
+        print('---------out_function---------')
         return this.A
     
     """
@@ -116,7 +122,7 @@ class Mesh:
     """
     def matrice_B(this, p):
 
-        this.B = np.zeros((2, 2), dtype = complex)
+        this.B = np.zeros((2, 2))#, dtype = complex)
 
         p1 = this.Nodes[this.Triangles[p].sommets[0]- 1]
 
@@ -167,20 +173,21 @@ class Mesh:
 
         for p in range(0, this.Nt):
             B = this.matrice_B(p)
-            bTb = np.matmul(B, np.transpose(B))
+            bTb = np.dot(np.transpose(B),B)
 
             for i in range(0, 3):
                 I = this.Triangles[p].sommets[i]
                 for j in range(0, 3):
                     J = this.Triangles[p].sommets[j]
-                    this.D[I-1][J-1] += -(this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.matmul( np.transpose(this.grad_phi_ref[j]) ,np.matmul(bTb, this.grad_phi_ref[i]))
+                    this.D[I-1][J-1] += -(this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
         return this.D
+    
 
     def vector_U(this):
         this.U = np.linalg.solve(this.A, this.b)
-        print(this.U)
-        for n in this.Nodes:
-            this.U[n.id -1 ] = np.abs(this.U[n.id-1] + this.u_inc(n.x, n.y))
+#        print(this.U)
+#        for n in this.Nodes:
+#            this.U[n.id -1 ] = np.abs(this.U[n.id-1] + this.u_inc(n.x, n.y))
         return this.U
 
 class Node:

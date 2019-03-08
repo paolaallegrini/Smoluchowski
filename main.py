@@ -20,26 +20,24 @@ def check_mat():
 # Mesh creation from msh file:
 our_mesh = read_file("maillage/square_simple.msh")
 
-
-# calculationg matrix A:
+#save matrices in files
 check_mat()
-A = our_mesh.matrice_A()
-print("------------------A--------------")
-#print(A)
-print("------------------det(A)--------------")
-print(np.linalg.det(A))
-print("det M")
-M=our_mesh.matrice_mass()
-print(np.linalg.det(M))
-# calculating b:
-b = our_mesh.vector_b()
-print("---------------b----------------")
-#print(b)
 
-#U = our_mesh.vector_U()
+#print matrices in terminal
+def check_print():
+    print("------------------A--------------")
+    A = our_mesh.matrice_A()
+    print(A)
+    print("------------------det(A)--------------")
+    print(np.linalg.det(A))
+    print("------------------M--------------")
+    print(our_mesh.matrice_mass())
+    print("------------------R--------------")
+    print(our_mesh.matrice_rigidite())
+    print("------------------U--------------")
+    U=our_mesh.vector_U()
+    print(U)
+    print("--------------Done---------------")
 
-print("--------------Solution Real Part---------------")
-
-#print(np.real(U))
-
-#write_file(our_mesh)
+#Write solution in paraview format
+write_file(our_mesh)
