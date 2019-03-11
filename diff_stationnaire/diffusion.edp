@@ -1,0 +1,26 @@
+/* Variables générales*/
+
+load "gmsh";
+mesh th=gmshload("maillage/square_simple.msh");
+// plot(Th, wait= true, cmm = "Mon superbe maillage");
+
+real coeffd=0.5;
+real dt=0.01;
+//func uinc = cos(pi*x)*cos(pi*y);
+
+fespace Vh(th,P1);
+Vh uh,vh;
+
+Problem Diffusion (uh , vh) = int2d(th) (-dt*coeffd*dx(uh)*dx(vh)-dt*coeffd*dy(uh)*dy(vh))
++int2d(th)(uh*vh);
++on(1,uh=20);
+
+Diffusion;  //solve the pde
+
+
+// Pour obtenir les parties réelles, valeur absolue :
+//Vh ure = real(uh);
+
+plot(uh,wait=1,fill=true);
+
+

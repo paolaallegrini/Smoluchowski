@@ -1,0 +1,87 @@
+/* Variables générales*/
+
+load "gmsh";
+mesh th=gmshload("maillage/square_simple.msh");
+// plot(Th, wait= true, cmm = "Mon superbe maillage");
+
+real coeffd=0.5;
+real dt=0.01;
+//func uinc = cos(pi*x)*cos(pi*y);
+
+fespace Vh(th,P1);
+Vh<complex> uh,vh;
+
+
+// border a(t=0,2*pi){ x=cos(t); y=sin(t);label=3;}
+// border b(t=0,2*pi){ x=0.3+0.3*cos(t); y=0.3*sin(t);label=2;}
+// mesh Th= buildmesh(a(50)+b(-30));
+
+// plot(Th, wait= true, cmm = "Mon superbe maillage");
+// savemesh(Th,"Th.msh");
+
+
+/* Vérification des matrices*/
+
+// varf Helmholtz(uh,vh) = -int2d(Th)(dx(uh)*dx(vh)) -int2d(Th)(dy(uh)*dy(vh))
+// + int2d(Th)(k*k*uh*vh) + on (3,uh=-uinc) - int1d(Th,2)(L*k*uh*vh);
+
+
+// matrice de rigidité
+varf rigidite (uh , vh, solver=LU) = int2d(th) (dt*coeffd*dx(uh)*dx(vh)+coeffd*dt*dy(uh)*dy(vh));
+matrix<complex> matRigid = rigidite( Vh, Vh);
+{ 
+  ofstream fout("mat_rigid.txt") ;
+  fout << matRigid << endl ;
+}  
+
+// matrice de masse
+varf masse (uh , vh, solver=LU) = int2d(th)(uh*vh);
+matrix<complex> matMasse = masse( Vh, Vh);
+{ 
+  ofstream fout("mat_masse.txt") ;
+  fout << matMasse << endl ;
+}  
+
+/* matrice de bord
+varf bord (uh , vh, solver=LU) = - int1d ( Th, 2 ) (  1i*k*uh* vh );
+matrix<complex> matBord = bord( Vh, Vh);
+{ 
+  ofstream fout("mat_masse_bord.txt") ;
+  fout << matBord << endl ;
+}  
+*/
+
+varf Diffusion (uh , vh, solver=LU) = int2d(th) (-dt*coeffd*dx(uh)*dx(vh)-dt*coeffd*dy(uh)*dy(vh))
++int2d(th)(uh*vh);
+//+on(1,uh=20);
+
+// Pour obtenir les parties réelles, valeur absolue :
+Vh<complex> uabs = abs(uh);
+Vh<complex> ure = real(uh);
+
+plot(ure,wait=1,fill=true);
+
+/*vecteur B
+Vh<complex> B;
+B[] = Diffusion(0, Vh);
+{ 
+  ofstream fout("B.txt") ;
+  for (int j=0;j<B[].n ; j++)
+  {
+  	fout << B[][j] << endl ;
+  }
+}  
+
+// vecteur solution
+Vh<complex> solution;
+matrix<complex> A = Diffusion( Vh, Vh);
+solution[] = A^-1 * B[];
+{ 
+  ofstream fout("U.txt") ;
+  
+  for (int j=0;j<solution[].n ; j++)
+  {
+  	fout << solution[][j] << endl ;
+  }
+} 
+*/ 

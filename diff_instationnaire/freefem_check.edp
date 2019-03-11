@@ -51,10 +51,15 @@ matrix<complex> matBord = bord( Vh, Vh);
 }  
 */
 
-varf Diffusion (uh , vh, solver=LU) = int2d(th) (coeffd*dx(uh)*dx(vh)+coeffd*dy(uh)*dy(vh))
-+int2d(th)(1.0/dt*uh*vh)
-+on(1,uh=20);
+varf Diffusion (uh , vh, solver=LU) = int2d(th) (-dt*coeffd*dx(uh)*dx(vh)-dt*coeffd*dy(uh)*dy(vh))
++int2d(th)(uh*vh);
+//+on(1,uh=20);
 
+// Pour obtenir les parties réelles, valeur absolue :
+Vh<complex> uabs = abs(uh);
+Vh<complex> ure = real(uh);
+
+plot(ure,wait=1,fill=true);
 
 /*vecteur B
 Vh<complex> B;

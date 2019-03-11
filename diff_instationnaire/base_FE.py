@@ -6,8 +6,8 @@ Prof: Bertrand Thierry
 """
 
 import numpy as np
-from math import cos, sqrt, sin
-from cmath import exp
+from math import sqrt
+#from cmath import exp
 
 
 """
@@ -16,31 +16,41 @@ It also aontains the necessery functions that calculate "Masse", "Rigidite" ->A 
 The function vector_U calculates the solution to the given problem and puts it in the vector U
 """
 class Mesh:
-    def __init__(this, Format_, Ns,Nodes , Nt, Triangles, b_ext_size, Bord_exts, b_int_size, Bord_int, coeff_d, dt):
+    def __init__(this, Format_, Ns,Nodes , Nt, Triangles, b_ext_size, Bord_exts, b_int_size, Bord_int):
         this.Format = Format_
         this.Nodes = Nodes
         this.Triangles = Triangles
         this.Ns = Ns
         this.Nt = Nt
         this.grad_phi_ref = np.array([[-1, -1], [1, 0], [0, 1]])
-
-        this.coeff_d = coeff_d
-        this.dt = dt
         
+        #inter and exter borders
         this.b_ext_size = b_ext_size
         this.Bord_exts = Bord_exts
-
         this.b_int_size = b_int_size
         this.Bord_int = Bord_int
-
+        
+        #inter and exter nodes
         this.Nodes_inter = []
         this.find_int_nodes()
-        this.matrice_mass()
-        this.matrice_rigidite()
-
-        this.vector_b()
-        this.matrice_A()
-        #this.vector_U()
+        this.Nodes_exter = []
+        this.find_ext_nodes()
+        
+        # conditions by default
+        this.coeff_d = 20
+        this.dt = 0.1
+        this.U0=20
+        this.t=0
+        
+      
+    """
+    conditions
+    """
+    def init_cond(this,coeff_d, dt, U0):
+        this.coeff_d =coeff_d
+        this.dt = dt
+        this.U0=U0
+        return this.coeff_d,this.dt,this.U0
 
     """
     finds internal bound's nodes' id_s
@@ -52,6 +62,16 @@ class Mesh:
             for s in this.Bord_int[i].sommets:
                 if not(s in this.Nodes_inter):
                     this.Nodes_inter.append(s)
+        """
+    finds external bound's nodes' id_s
+    """
+    def find_ext_nodes(this):
+        this.Nodes_exter = []
+        
+        for i in range(0, this.b_ext_size):
+            for s in this.Bord_exts[i].sommets:
+                if not(s in this.Nodes_exter):
+                    this.Nodes_exter.append(s)
 
 
     """
@@ -84,15 +104,24 @@ class Mesh:
     - x : first coordinate of a point
     - y : second coordinate of a point
     """
-    def u_inc(this, x, y):
-        return exp(np.complex(0, 1)*this.k) * (x*cos(this.alpha) + y*sin(this.alpha))
+    def u_inc(this):
+        #return exp(np.complex(0, 1)*this.k) * (x*cos(this.alpha) + y*sin(this.alpha))
+        return this.U0
+    
 
     def vector_b(this):
-        this.b = np.zeros(this.Ns, dtype = complex)
-
-        for id_s in this.Nodes_inter:
-            p = this.Nodes[id_s-1]
-            this.b[id_s-1] = - this.u_inc(p.x, p.y)
+        
+        this.b = np.zeros(this.Ns)     
+        if (this.t!=0):
+            #this.b=this.b + np.dot(this.M,this.Uold)
+            for i in range(0, this.Ns):
+                for j in range(0, this.Ns):
+                    this.b[i] += this.M[i][j]*this.Uold[j]
+        
+        for id_s in this.Nodes_exter:
+        #p = this.Nodes[id_s-1]
+            this.b[id_s-1] = this.u_inc()
+            
         return this.b
 
     """
@@ -105,16 +134,15 @@ class Mesh:
         for i in range(0, this.Ns):
             for j in range(0, this.Ns):
                 this.A[i][j] = this.M[i][j] + this.D[i][j]
-                print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
-                
+                #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
 
-#        for id_s in this.Nodes_inter: #no internal border
-#            this.A[int(id_s) -1][:] = 0
-#            this.A[int(id_s) -1][int(id_s) -1] = 1
+        for id_s in this.Nodes_exter: #external border
+            this.A[int(id_s) -1][:] = 0
+            this.A[int(id_s) -1][int(id_s) -1] = 1
         
-        print('--------Mat_A function--------')
-        print(this.A)
-        print('---------out_function---------')
+#        print('--------Mat_A function--------')
+#        print(this.A)
+#        print('---------out_function---------')
         return this.A
     
     """
@@ -168,7 +196,7 @@ class Mesh:
 
         return this.M
 
-    def matrice_rigidite(this ):
+    def matrice_rigidite(this):
         this.D = np.zeros((this.Ns, this.Ns))#, dtype = np.complex)
 
         for p in range(0, this.Nt):
@@ -179,16 +207,24 @@ class Mesh:
                 I = this.Triangles[p].sommets[i]
                 for j in range(0, 3):
                     J = this.Triangles[p].sommets[j]
-                    this.D[I-1][J-1] += -(this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
+                    this.D[I-1][J-1] += (this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
         return this.D
     
 
     def vector_U(this):
         this.U = np.linalg.solve(this.A, this.b)
-#        print(this.U)
-#        for n in this.Nodes:
-#            this.U[n.id -1 ] = np.abs(this.U[n.id-1] + this.u_inc(n.x, n.y))
+        this.Uold=this.U
         return this.U
+    
+    def maj_matrices(this):
+                #matrices
+        this.matrice_mass()
+        this.matrice_rigidite()
+        this.matrice_A()
+        this.vector_b()
+        this.vector_U()
+        return 
+
 
 class Node:
   def __init__(this, id, x,y, z):
