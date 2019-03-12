@@ -7,7 +7,7 @@ Created on Thu Mar  7 10:01:43 2019
 """
 Reading a gmsh file and filling a mesh object
 """
-from base_FE import Mesh, Node, Element, Triangle, Segment
+from base_FE_Neumann_int import Mesh, Node, Element, Triangle, Segment
 import numpy as np
 
 def read_file(filename):

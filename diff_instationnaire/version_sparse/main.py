@@ -9,9 +9,8 @@ from paraview import write_file
 #from check import check_mat,check_print
 import numpy as np
 
-
-coeff_d=0.01
 dt=0.1
+coeff_d=0.01
 U0=20
 Itf=30 # Nb iterations
 
@@ -24,23 +23,28 @@ our_mesh.maj_matrices()
 
 
 
+
+''' Time loop '''
 Uit=np.array([])
 for it in range(Itf):
     #print('Iteration : %d'%it)
-    b=our_mesh.vector_b()
     U=our_mesh.vector_U()
     Uit=np.concatenate((Uit,U))
     our_mesh.t+=dt
 
+
 Uit=Uit.reshape((Itf,our_mesh.Ns))
+np.savetxt("mat_Uit.csv",Uit,delimiter=",")
 
-
-#Write solution in paraview format
+for it in range(0,np.size(our_mesh.Uold)):
+    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
+    
+    
+'''Write solution in paraview format'''
 write_file(our_mesh)
-print(our_mesh.Uold)
+
 #save matrices in files
 #check_mat(our_mesh)
-
 #print matrices 
 #check_print(our_mesh)
 

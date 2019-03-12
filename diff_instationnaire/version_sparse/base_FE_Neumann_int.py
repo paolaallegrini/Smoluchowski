@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Tue Mar 12 15:58:58 2019
+
+@author: Home
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Mesh project script containing mesh class
 Mahshid Khezri Nejad Paola Allegrini
 Prof: Bertrand Thierry
@@ -116,13 +123,20 @@ class Mesh:
         this.b = np.zeros(this.Ns)     
         if (this.t!=0):
             this.b=this.b + np.dot(this.M.toarray(),this.Uold)
-#            for i in range(0, this.Ns):
-#                for j in range(0, this.Ns):
-#                    this.b[i] +=this.M[i,j]*this.Uold[j]
-        
-        for id_s in this.Nodes_exter:
-        #p = this.Nodes[id_s-1]
-            this.b[id_s-1] = this.u_inc()
+
+        ' Condition dirichlet bord ext '
+#        for id_s in this.Nodes_exter:
+#        #p = this.Nodes[id_s-1]
+#            this.b[id_s-1] = this.u_inc()
+
+
+        ' Condition neumann bord int fonction constante'
+        for p in range(0,this.b_int_size):
+            taille=this.aire_seg(p+1,2)
+            p1=this.Bord_exts[p].sommets[0]
+            #p2=this.Bord_exts[p].sommets[1]
+            this.b[p1]+=taille*this.u_inc()
+            #this.b[p2]+=taille*this.u_inc()
             
         return this.b
 
@@ -136,14 +150,13 @@ class Mesh:
         for i in range(0, this.Ns):
             for j in range(0, this.Ns):
                 this.A[i,j] = this.M[i,j] + this.D[i,j]
-
-        for id_s in this.Nodes_exter: #external border
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
+                #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
         
-#        print('--------Mat_A function--------')
-#        print(this.A)
-#        print('---------out_function---------')
+        ' cond dirichlet bord ext '
+#        for id_s in this.Nodes_exter: #external border
+#            this.A[int(id_s) -1,:] = 0
+#            this.A[int(id_s) -1,int(id_s) -1] = 1
+
         this.A=this.A.tocsr()
         return this.A
     
@@ -182,7 +195,7 @@ class Mesh:
                     else: # 1
                         this.M[I-1,J-1] += this.aire_element(p+1)/12.0
                         
-# conditon ext border
+# 'conditon ext border robin fourier
 #        for p in range(0, this.b_ext_size):
 #            for i in range(0, 2):
 #                I = this.Bord_exts[p].sommets[i] 
@@ -195,11 +208,12 @@ class Mesh:
 #                    else : # 1
 ##                       this.M[I-1][J-1] += np.complex(0, -1) * (this.k) * this.aire_seg( p+1, 1 )/6.0
 #                        this.M[I-1][J-1] += 20 * this.aire_seg( p+1, 1 )/6.0
+
         this.M=this.M.tocsr() 
         return this.M
 
     def matrice_rigidite(this):
-        #this.D = np.zeros((this.Ns, this.Ns))#, dtype = np.complex)
+
         this.D = lil_matrix((this.Ns, this.Ns))
         for p in range(0, this.Nt):
             B = this.matrice_B(p)
@@ -210,11 +224,12 @@ class Mesh:
                 for j in range(0, 3):
                     J = this.Triangles[p].sommets[j]
                     this.D[I-1,J-1] += (this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
+        
         this.D=this.D.tocsr()
         return this.D
-    
 
     def vector_U(this):
+        this.vector_b()
         this.U = spsolve(this.A, this.b)
         this.Uold=this.U
         return this.U
@@ -253,4 +268,3 @@ class Segment:
     def __init__(this, id, sommets):
         this.id = id
         this.sommets = sommets
-
