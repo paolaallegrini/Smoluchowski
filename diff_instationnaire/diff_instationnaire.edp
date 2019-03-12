@@ -1,12 +1,12 @@
 
 /* Variables générales*/
 load "gmsh";
-mesh th=gmshload("../maillage/square_simple.msh");
+mesh th=gmshload("../maillage/square_hole.msh");
 // plot(Th, wait= true, cmm = "Mon superbe maillage");
 
 real dt=0.1;
 real T=10;
-real coeffd=20;
+real coeffd=0.1;
 
 fespace Vh(th,P1);
 Vh uh,vh,uold;
@@ -30,11 +30,11 @@ for ( it = 1; it <= 30; it++ )
     Diffusion;
     uold = uh;
 
-  cout<< "it= " << it << endl;
+  /*cout<< "it= " << it << endl;
   for (int j=0;j<uold[].n ; j++)
   {
   	cout << "uold(" << j <<")= "<< uold[][j] << endl;
-  }
+  }*/
 
   plot(th,uh,wait=1,fill=true);
 }

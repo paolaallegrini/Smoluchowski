@@ -10,14 +10,14 @@ from paraview import write_file
 import numpy as np
 
 
-coeff_d=20
+coeff_d=0.01
 dt=0.1
 U0=20
 Itf=30 # Nb iterations
 
 # Mesh creation from msh file:
 
-our_mesh = read_file("../../maillage/square_simple_h50.msh")
+our_mesh = read_file("../../maillage/square_holes.msh")
 #parameters
 our_mesh.init_cond(coeff_d,dt,U0)
 our_mesh.maj_matrices()
@@ -31,9 +31,10 @@ for it in range(Itf):
     U=our_mesh.vector_U()
     Uit=np.concatenate((Uit,U))
     our_mesh.t+=dt
-    it+=1
 
 Uit=Uit.reshape((Itf,our_mesh.Ns))
+
+
 #Write solution in paraview format
 write_file(our_mesh)
 
