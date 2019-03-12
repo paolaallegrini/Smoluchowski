@@ -1,5 +1,5 @@
 Mesh.MshFileVersion = 2.2;
-h = 0.01; //Taille caractéristique des éléménts, précision du maillage
+h = 0.1; //Taille caractéristique des éléménts, précision du maillage
 Point(1) = {0, 0, 0, h};   // Construction des points ext
 Point(2) = {1, 0, 0, h};
 Point(3) = {1, 1, 0, h};
@@ -10,7 +10,7 @@ Line(23) = {2,3};
 Line(34) = {3,4};
 Line(41)={4,1};
 
-Rh=0.05;
+Rh=0.1;
 xc=0.2;
 yc=0.2;
 
@@ -146,8 +146,12 @@ Line Loop(10) = {33,344,35,36};
 
 
 Plane Surface(1) = {1,-2,-3,-4,-5,-6,-7,-8,-9,-10};//Définition d'une surface
+
+// Bord int=1
+Physical Line("BordInt")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
+
+//Bord ext = 2
 Physical Line("BordExt")={12,23,34,41};
-Physical Line("BordInt")={1,2,3,4,5,6,7,8,9,10,11,122};
 
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage
 

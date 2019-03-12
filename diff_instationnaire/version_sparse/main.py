@@ -37,7 +37,7 @@ Uit=Uit.reshape((Itf,our_mesh.Ns))
 
 #Write solution in paraview format
 write_file(our_mesh)
-
+print(our_mesh.Uold)
 #save matrices in files
 #check_mat(our_mesh)
 
