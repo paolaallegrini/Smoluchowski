@@ -6,13 +6,14 @@ Created on Thu Mar  7 09:50:06 2019
 """
 from read_file import read_file
 from paraview import write_file
+from plot import plot_mesh
 #from check import check_mat,check_print
 import numpy as np
 
 dt=0.1
 coeff_d=0.5
 U0=10.0
-Itf=15000 # Nb iterations
+Itf=15 # Nb iterations
 
 # Mesh creation from msh file:
 
@@ -32,16 +33,20 @@ for it in range(Itf):
     Uit=np.concatenate((Uit,U))
     our_mesh.t+=dt
 
-
-#Uit=Uit.reshape((Itf,our_mesh.Ns))
+Uit=Uit.reshape((Itf,our_mesh.Ns))
 #np.savetxt("mat_Uit.csv",Uit,delimiter=",")
 
-for it in range(0,np.size(our_mesh.Uold)):
-    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
-    
+
+#for it in range(0,np.size(our_mesh.Uold)):
+#    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
+
+''' Plot mesh '''
+plot_mesh(our_mesh,Uit)
 
 '''Write solution in paraview format'''
 write_file(our_mesh)
+
+
 
 #save matrices in files
 #check_mat(our_mesh)
