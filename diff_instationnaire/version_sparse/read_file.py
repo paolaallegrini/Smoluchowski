@@ -17,8 +17,9 @@ def read_file(filename):
     NumberOfTr = 0
     NumberOfSeg = 0
     Number0fElems = 0
+    #NumberOfBorders =0
+    cnt_1 = cnt_2 = cnt_3 = 0 # compteurs seg dans chaque Bord
     
-    cnt_ext = cnt_inter = 0
     with open(filename) as f:
         content = f.readlines()
 
@@ -34,7 +35,14 @@ def read_file(filename):
 
                 formats = np.asarray( line.split(" ") );
                 MeshFormat = formats # check if it works 
+            elif property =="PhysicalNames":
+                i+=1
+                line = content[i]
+            
+                NumberOfBorders = (int)(content[i][0:-1].split(" ")[0]) -1
+                #print("nb bords : {}".format(NumberOfBorders))
 
+                i += 1;
 
             elif property == "Nodes":
                 i+=1
@@ -76,9 +84,13 @@ def read_file(filename):
                     Elems.append(np.asarray([content[j][0:-1].split(" ")[1: ( vertice_n +bntg + 3)]]))  #[cnt] = np.asarray([content[j][0:-1].split(" ")[1:(vertice_n * 2 + 2)]])
 
                     if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '1':
-                        cnt_ext += 1
+                        cnt_1 += 1
+                        
                     if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '2':
-                        cnt_inter += 1
+                        cnt_2 += 1
+                        
+                    if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '3':
+                        cnt_3 += 1
 
                     cnt = cnt +1
             else:
@@ -89,16 +101,16 @@ def read_file(filename):
     Trs_ = np.empty(NumberOfTr, dtype = Triangle)
     
 
-    segs_ext = np.empty(cnt_ext, dtype = Segment)
-    segs_int = np.empty(cnt_inter, dtype = Segment)
+    segs_1 = np.empty(cnt_1, dtype = Segment)
+    segs_2 = np.empty(cnt_2, dtype = Segment)
+    segs_3 = np.empty(cnt_3, dtype = Segment)
 
     cnt = 0
     for i in range(0, Number0fNodes):
         Nodes_[ i ] = Node(i,Nodes[i][1], Nodes[i][2], Nodes[i][3])
 
-    ide_ext = ide_int = 0
 
-
+    ide_1 = ide_2 = ide_3 = 0
     cntT = 0
     for i in range(0, Number0fElems):
 
@@ -117,14 +129,18 @@ def read_file(filename):
 
         elif Elems_i[0] == 1:
 
-            if int(Elems_i[2]) == 1: #ext
-                segs_ext[ide_ext] = Segment(i, Elems_i[2+nbTag:]) #seg_s;
-                ide_ext += 1
+            if int(Elems_i[2]) == 1: #Mur ou Ext 
+                segs_1[ide_1] = Segment(i, Elems_i[2+nbTag:]) #seg_s;
+                ide_1 += 1
                 
-            else:
-                if Elems_i[2] == 2: #int
-                    segs_int[ide_int] = Segment(i, Elems_i[2+nbTag:])#seg_s
-                    ide_int +=  1
-
-    princeMesh = Mesh(MeshFormat, Number0fNodes, Nodes_, NumberOfTr , Trs_, cnt_ext, segs_ext , cnt_inter, segs_int) #def __init__(this, Format_, Ns,Nodes , Nt, Triangles):
+            elif Elems_i[2] == 2: # Interieur ou Gauche
+                segs_2[ide_2] = Segment(i, Elems_i[2+nbTag:])#seg_s
+                ide_2 +=  1
+            elif Elems_i[2] == 3: # Droite
+                segs_3[ide_3] = Segment(i, Elems_i[2+nbTag:])#seg_s
+                ide_3 +=  1
+                
+    Segs=[segs_1,segs_2,segs_3]
+    Cnt_bord=[cnt_1,cnt_2,cnt_3]
+    princeMesh = Mesh(Number0fNodes, Nodes_, NumberOfTr , Trs_,Segs,Cnt_bord) #def __init__(this, Format_, Ns,Nodes , Nt, Triangles):
     return princeMesh

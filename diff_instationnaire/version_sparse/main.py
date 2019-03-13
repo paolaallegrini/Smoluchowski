@@ -10,13 +10,13 @@ from paraview import write_file
 import numpy as np
 
 dt=0.1
-coeff_d=0.01
-U0=20
-Itf=30 # Nb iterations
+coeff_d=0.5
+U0=10.0
+Itf=15000 # Nb iterations
 
 # Mesh creation from msh file:
 
-our_mesh = read_file("../../maillage/square_holes.msh")
+our_mesh = read_file("../../maillage/square_4_borders.msh")
 #parameters
 our_mesh.init_cond(coeff_d,dt,U0)
 our_mesh.maj_matrices()
@@ -33,13 +33,13 @@ for it in range(Itf):
     our_mesh.t+=dt
 
 
-Uit=Uit.reshape((Itf,our_mesh.Ns))
-np.savetxt("mat_Uit.csv",Uit,delimiter=",")
+#Uit=Uit.reshape((Itf,our_mesh.Ns))
+#np.savetxt("mat_Uit.csv",Uit,delimiter=",")
 
 for it in range(0,np.size(our_mesh.Uold)):
     print('Uold({})={}'.format(it, our_mesh.Uold[it]))
     
-    
+
 '''Write solution in paraview format'''
 write_file(our_mesh)
 

@@ -25,8 +25,7 @@ It also aontains the necessery functions that calculate "Masse", "Rigidite" ->A 
 The function vector_U calculates the solution to the given problem and puts it in the vector U
 """
 class Mesh:
-    def __init__(this, Format_, Ns,Nodes , Nt, Triangles, b_ext_size, Bord_exts, b_int_size, Bord_int):
-        this.Format = Format_
+    def __init__(this, Ns, Nodes , Nt, Triangles, Segs,Cnt_bord):
         this.Nodes = Nodes
         this.Triangles = Triangles
         this.Ns = Ns
@@ -34,16 +33,14 @@ class Mesh:
         this.grad_phi_ref = np.array([[-1, -1], [1, 0], [0, 1]])
         
         #inter and exter borders
-        this.b_ext_size = b_ext_size
-        this.Bord_exts = Bord_exts
-        this.b_int_size = b_int_size
-        this.Bord_int = Bord_int
+        this.Cnt_bord = Cnt_bord
+        this.Bords = Segs
+        this.Bord_1 = Segs[0] # Mur ou Ext
+        this.Bord_2 = Segs[1] # Gauche ou Int
+        this.Bord_3 = Segs[2] # Droite
         
-        #inter and exter nodes
-        this.Nodes_inter = []
-        this.find_int_nodes()
-        this.Nodes_exter = []
-        this.find_ext_nodes()
+        #find border nodes
+        this.Nodes_bords=this.find_bords_nodes()
         
         # conditions by default
         this.coeff_d = 20
@@ -59,28 +56,21 @@ class Mesh:
         this.coeff_d =coeff_d
         this.dt = dt
         this.U0=U0
+        this.Uold=this.U0*np.ones(this.Ns)
         return this.coeff_d,this.dt,this.U0
 
     """
-    finds internal bound's nodes' id_s
+    finds bound's nodes' id_s
     """
-    def find_int_nodes(this):
-        this.Nodes_inter = []
-        
-        for i in range(0, this.b_int_size):
-            for s in this.Bord_int[i].sommets:
-                if not(s in this.Nodes_inter):
-                    this.Nodes_inter.append(s)
-        """
-    finds external bound's nodes' id_s
-    """
-    def find_ext_nodes(this):
-        this.Nodes_exter = []
-        
-        for i in range(0, this.b_ext_size):
-            for s in this.Bord_exts[i].sommets:
-                if not(s in this.Nodes_exter):
-                    this.Nodes_exter.append(s)
+    def find_bords_nodes(this):
+        this.Nodes_bords =[[],[],[]]
+        for i in range(0,3):
+            for j in range(0, this.Cnt_bord[i]):
+                for s in this.Bords[i][j].sommets:
+                    if not(s in this.Bords[i]):
+                        this.Nodes_bords[i].append(s)
+
+        return this.Nodes_bords
 
 
     """
@@ -100,11 +90,14 @@ class Mesh:
     """
     def aire_seg(this, id, quoi):
         if quoi == 1:
-            p1 = this.Nodes[this.Bord_exts[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_exts[id-1].sommets[1]- 1]
-        else:
-            p1 = this.Nodes[this.Bord_int[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_int[id-1].sommets[1]- 1]
+            p1 = this.Nodes[this.Bord1[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Bord1[id-1].sommets[1]- 1]
+        elif quoi==2:
+            p1 = this.Nodes[this.Bord_2[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Bord_2[id-1].sommets[1]- 1]
+        elif quoi==3:
+            p1 = this.Nodes[this.Bord_3[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Bord_3[id-1].sommets[1]- 1]
 
         return (sqrt( (p1.x - p2.x)**2 + (p1.y - p2.y)**2 ))
 
@@ -120,23 +113,25 @@ class Mesh:
 
     def vector_b(this):
         
-        this.b = np.zeros(this.Ns)     
-        if (this.t!=0):
-            this.b=this.b + np.dot(this.M.toarray(),this.Uold)
+        this.b = np.zeros(this.Ns)
+        #if (this.t!=0):
+        this.b=this.b + np.dot(this.M.toarray(),this.Uold)
 
-        ' Condition dirichlet bord ext '
-#        for id_s in this.Nodes_exter:
-#        #p = this.Nodes[id_s-1]
-#            this.b[id_s-1] = this.u_inc()
+        ' Condition dirichlet '
+        for id_s in this.Nodes_bords[1]:
+            this.b[id_s-1] = 22
 
+        for id_s in this.Nodes_bords[2]:
+            this.b[id_s-1] = 2
 
         ' Condition neumann bord int fonction constante'
-        for p in range(0,this.b_int_size):
-            taille=this.aire_seg(p+1,2)
-            p1=this.Bord_exts[p].sommets[0]
-            #p2=this.Bord_exts[p].sommets[1]
-            this.b[p1]+=taille*this.u_inc()
-            #this.b[p2]+=taille*this.u_inc()
+#        for p in range(0,this.b_int_size):
+#            taille=this.aire_seg(p+1,2)
+#            p1=this.Bord_exts[p].sommets[0]
+#            p2=this.Bord_exts[p].sommets[1]
+#            this.b[p1]+=taille*this.u_inc()
+#            this.b[p2]+=taille*this.u_inc()
+
             
         return this.b
 
@@ -152,10 +147,13 @@ class Mesh:
                 this.A[i,j] = this.M[i,j] + this.D[i,j]
                 #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
         
-        ' cond dirichlet bord ext '
-#        for id_s in this.Nodes_exter: #external border
-#            this.A[int(id_s) -1,:] = 0
-#            this.A[int(id_s) -1,int(id_s) -1] = 1
+        ' condition dirichlet bord'
+        for id_s in this.Nodes_bords[1]: # Gauche
+            this.A[int(id_s) -1,:] = 0
+            this.A[int(id_s) -1,int(id_s) -1] = 1
+        for id_s in this.Nodes_bords[2]: # Droite
+            this.A[int(id_s) -1,:] = 0
+            this.A[int(id_s) -1,int(id_s) -1] = 1
 
         this.A=this.A.tocsr()
         return this.A

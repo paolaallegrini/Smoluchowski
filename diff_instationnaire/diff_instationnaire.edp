@@ -1,12 +1,12 @@
 
 /* Variables générales*/
 load "gmsh";
-mesh th=gmshload("../maillage/square_hole.msh");
+mesh th=gmshload("../maillage/square_4_borders.msh");
 // plot(Th, wait= true, cmm = "Mon superbe maillage");
 
 real dt=0.1;
-real coeffd=0.01;
-int Itf=30;
+real coeffd=0.1;
+int Itf=100;
 fespace Vh(th,P1);
 Vh uh,vh,uold;
 
@@ -19,8 +19,8 @@ problem Diffusion (uh , vh, solver=LU) =
 int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+dt*coeffd*dy(uh)*dy(vh))
 + int2d(th)(uh*vh)
 - int2d(th) (uold*vh)
-- int1d(th,1) (20*vh);
-//+on(1,uh=20);
++on(2,uh=22)
++on(3,uh=2);
 
 //Time loop
 for ( it = 0; it <Itf ; it++ ) 
@@ -34,8 +34,9 @@ for ( it = 0; it <Itf ; it++ )
   	cout << "uold(" << j <<")= "<< uold[][j] << endl;
   }*/
 
-  plot(th,uh,wait=1,fill=true);
+  
 }
+	plot(th,uh,wait=1,fill=true);
   for (int j=0;j<uold[].n ; j++)
   {
   	cout << "uold(" << j <<")= "<< uold[][j] << endl;
