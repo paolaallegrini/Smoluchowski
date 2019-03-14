@@ -6,7 +6,7 @@ Created on Thu Mar  7 09:50:06 2019
 """
 from read_file import read_file
 from paraview import write_file
-from plot import plot_mesh
+from plot import plot_mesh, plot_animation
 #from check import check_mat,check_print
 import numpy as np
 
@@ -22,8 +22,13 @@ our_mesh = read_file("../../maillage/square_4_borders.msh")
 our_mesh.init_cond(coeff_d,dt,U0)
 our_mesh.maj_matrices()
 
+Uold=our_mesh.Uold
+our_mesh.U=Uold
+'''Write solution in paraview format'''
+write_file(our_mesh)
 
 
+plot_mesh(our_mesh,Uold)
 
 ''' Time loop '''
 Uit=np.array([])
@@ -40,16 +45,7 @@ Uit=Uit.reshape((Itf,our_mesh.Ns))
 #for it in range(0,np.size(our_mesh.Uold)):
 #    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
 
-''' Plot mesh '''
-plot_mesh(our_mesh,Uit)
-
-'''Write solution in paraview format'''
-write_file(our_mesh)
+plot_animation(our_mesh,Uit)
 
 
-
-#save matrices in files
-#check_mat(our_mesh)
-#print matrices 
-#check_print(our_mesh)
 
