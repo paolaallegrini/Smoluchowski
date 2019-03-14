@@ -233,9 +233,9 @@ class Mesh:
         return this.D
 
     def vector_U(this):
-        if (this.t==0):
-            this.U=this.Uold
-            return
+#        if (this.t==0):
+#            this.U=this.Uold
+#            return
         
         this.vector_b()
         this.U = spsolve(this.A, this.b)
