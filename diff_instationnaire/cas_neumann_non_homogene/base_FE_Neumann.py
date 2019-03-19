@@ -65,8 +65,7 @@ class Mesh:
 
         for id_s in this.Nodes_bords[2]:
             this.Uold[id_s-1] = 2
-
-
+            
     """
     finds bound's nodes' id_s
     """
@@ -239,11 +238,10 @@ class Mesh:
 #        if (this.t==0):
 #            this.U=this.Uold
 #            return
-        
         this.vector_b()
         this.U = spsolve(this.A, this.b)
         this.Uold=this.U
-        return
+        return this.U
     
     def maj_matrices(this):
                 #matrices

@@ -238,7 +238,7 @@ class Mesh:
         this.vector_b()
         this.U = spsolve(this.A, this.b)
         this.Uold=this.U
-        return 
+        return this.U
     
     def maj_matrices(this):
                 #matrices
