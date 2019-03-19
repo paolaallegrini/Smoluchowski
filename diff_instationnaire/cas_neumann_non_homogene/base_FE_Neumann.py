@@ -44,10 +44,9 @@ class Mesh:
         
         # conditions by default
         this.coeff_d = 20
-        this.dt = 0.1
+        this.dt = 1
         this.U0=20
         this.t=0
-        
       
     """
     conditions
@@ -55,6 +54,8 @@ class Mesh:
     def init_cond(this,coeff_d, dt, U0):
         this.coeff_d =coeff_d
         this.dt = dt
+
+        ' Condition t=0 '
         this.U0=U0
         this.Uold=this.U0*np.ones(this.Ns)
         
@@ -64,6 +65,7 @@ class Mesh:
 
         for id_s in this.Nodes_bords[2]:
             this.Uold[id_s-1] = 2
+
 
     """
     finds bound's nodes' id_s
@@ -96,8 +98,8 @@ class Mesh:
     """
     def aire_seg(this, id, quoi):
         if quoi == 1:
-            p1 = this.Nodes[this.Bord1[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord1[id-1].sommets[1]- 1]
+            p1 = this.Nodes[this.Bord_1[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Bord_1[id-1].sommets[1]- 1]
         elif quoi==2:
             p1 = this.Nodes[this.Bord_2[id-1].sommets[0]- 1]
             p2 = this.Nodes[this.Bord_2[id-1].sommets[1]- 1]
@@ -118,20 +120,22 @@ class Mesh:
     
 
     def vector_b(this):
+        #this.b=np.zeros(this.Ns,)
         
-        this.b = np.zeros(this.Ns)
-        if (this.t!=0):
-            this.b=this.b + np.dot(this.M.toarray(),this.Uold)
-            
+        #if (this.t!=0):
+        this.b=np.dot(this.M.toarray(),this.Uold)
+        
         'Condition neumann bord int fonction constante'
-#        for p in range(0,this.b_int_size):
-#            taille=this.aire_seg(p+1,2)
-#            p1=this.Bord_exts[p].sommets[0]
-#            p2=this.Bord_exts[p].sommets[1]
-#            this.b[p1]+=taille*this.u_inc()
-#            this.b[p2]+=taille*this.u_inc()
-        for id in this.Nodes_bords[0]:
-            this.b[id]+=this.dt
+        for p in range(0,np.size(this.Bord_1)):
+            taille=this.aire_seg(p+1,1)
+            
+            p1=this.Bord_1[p].sommets[0]
+            p2=this.Bord_1[p].sommets[1]
+            
+            this.b[p1]+=(taille/2)*this.dt
+            this.b[p2]+=(taille/2)*this.dt
+#        for id in this.Nodes_bords[0]:
+#            this.b[id]+=this.dt
 
         ' Condition dirichlet '
         for id_s in this.Nodes_bords[1]:
@@ -140,8 +144,6 @@ class Mesh:
         for id_s in this.Nodes_bords[2]:
             this.b[id_s-1] = 2
 
-
-            
         return this.b
 
     """
@@ -236,14 +238,14 @@ class Mesh:
         return this.D
 
     def vector_U(this):
-#        if (this.t==0):
-#            this.U=this.Uold
-#            return
+        if (this.t==0):
+            this.U=this.Uold
+            return
         
         this.vector_b()
         this.U = spsolve(this.A, this.b)
         this.Uold=this.U
-        return 
+        return
     
     def maj_matrices(this):
                 #matrices

@@ -119,15 +119,13 @@ class Mesh:
 
     def vector_b(this):
         
-        this.b = np.zeros(this.Ns)
-        if (this.t!=0):
-            this.b=this.b + np.dot(this.M.toarray(),this.Uold)
+        this.b=np.dot(this.M.toarray(),this.Uold)
 
         ' Condition dirichlet '
-        for id_s in this.Nodes_bords[1]:
+        for id_s in this.Nodes_bords[1]: #bord Gauche
             this.b[id_s-1] = 22
 
-        for id_s in this.Nodes_bords[2]:
+        for id_s in this.Nodes_bords[2]: #bord Droit
             this.b[id_s-1] = 2
 
         ' Condition neumann bord int fonction constante'

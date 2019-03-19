@@ -15,19 +15,19 @@ erase_files()
 dt=1
 coeff_d=2
 U0=10.0
-Itf=100# Nb iterations
+Itf=1000# Nb iterations
 our_mesh.init_cond(coeff_d,dt,U0)
 
+    
 ''' Initial situation '''
 our_mesh.maj_matrices()
-
 
 
 ''' Time loop '''
 #Uit=np.array([])
 #Uit=np.concatenate((Uit,our_mesh.U))
 for it in range(Itf):
-    #print('Iteration : %d'%it)
+
     if((it%10==0)):
         '''Write solution in paraview format'''
         write_file(our_mesh,int(it/10))
@@ -35,6 +35,8 @@ for it in range(Itf):
     U=our_mesh.vector_U()
     #Uit=np.concatenate((Uit,U))
     our_mesh.t+=dt
+
+    #print('Iteration : %d'%it)
 
 '''Write solution in paraview format'''
 write_file(our_mesh,int(Itf/10))
@@ -55,6 +57,3 @@ for it in range(0,np.size(our_mesh.Uold)):
 #plot_mesh(our_mesh,our_mesh.U)
 #plt.subplot(212)
 #plot_quadgrid(our_mesh,our_mesh.U)
-
-
-

@@ -9,11 +9,11 @@ from paraview import write_file,erase_files
 import numpy as np
 
 'Mesh creation from msh file'
-our_mesh = read_file("../../../maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
 erase_files()
 '''parameters'''
-dt=2
-coeff_d=1
+dt=1
+coeff_d=2
 U0=10.0
 Itf=100# Nb iterations
 our_mesh.init_cond(coeff_d,dt,U0)
