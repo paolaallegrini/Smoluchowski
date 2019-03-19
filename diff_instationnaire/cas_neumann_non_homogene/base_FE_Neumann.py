@@ -120,10 +120,10 @@ class Mesh:
     
 
     def vector_b(this):
-        #this.b=np.zeros(this.Ns,)
+        this.b=np.zeros(this.Ns,)
         
-        #if (this.t!=0):
-        this.b=np.dot(this.M.toarray(),this.Uold)
+        if (this.t!=0):
+            this.b=np.dot(this.M.toarray(),this.Uold)
         
         'Condition neumann bord int fonction constante'
         for p in range(0,np.size(this.Bord_1)):
@@ -132,8 +132,8 @@ class Mesh:
             p1=this.Bord_1[p].sommets[0]
             p2=this.Bord_1[p].sommets[1]
             
-            this.b[p1]+=(taille/2)*this.dt
-            this.b[p2]+=(taille/2)*this.dt
+            this.b[p1-1]+=(taille/2)*this.dt
+            this.b[p2-1]+=(taille/2)*this.dt
 #        for id in this.Nodes_bords[0]:
 #            this.b[id]+=this.dt
 
@@ -238,9 +238,9 @@ class Mesh:
         return this.D
 
     def vector_U(this):
-        if (this.t==0):
-            this.U=this.Uold
-            return
+#        if (this.t==0):
+#            this.U=this.Uold
+#            return
         
         this.vector_b()
         this.U = spsolve(this.A, this.b)

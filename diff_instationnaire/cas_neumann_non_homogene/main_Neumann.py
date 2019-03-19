@@ -9,7 +9,7 @@ from paraview import write_file,erase_files
 import numpy as np
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders.msh")
 erase_files()
 '''parameters'''
 dt=1
