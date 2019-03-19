@@ -1,12 +1,12 @@
 
 /* Variables générales*/
 load "gmsh";
-mesh th=gmshload("../../maillage/square_4_borders_hole.msh");
+mesh th=gmshload("../../maillage/square_4_borders.msh");
 // plot(Th, wait= true, cmm = "Mon superbe maillage");
 
 real dt=1;
 real coeffd=2;
-int Itf=100;
+int Itf=10000;
 fespace Vh(th,P1);
 Vh uh,vh,uold;
 
@@ -42,7 +42,7 @@ for ( it = 0; it <Itf ; it++ )
   	cout << "uold(" << j <<")= "<< uold[][j] << endl;
   }*/
 
-	if (it%10==0){
+	if (it==Itf-1){
 	plot(th,uh,wait=1,fill=true);
 	}
 }

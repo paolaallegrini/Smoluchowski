@@ -15,7 +15,7 @@ erase_files()
 dt=1
 coeff_d=2
 U0=10.0
-Itf=1000# Nb iterations
+Itf=10000# Nb iterations
 our_mesh.init_cond(coeff_d,dt,U0)
 
     
