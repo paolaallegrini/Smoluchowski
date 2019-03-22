@@ -13,7 +13,7 @@ import numpy as np
 import os
 import shutil
 
-def write_file( mesh_, it):
+def write_file( mesh_,U,it):
     
 	os.makedirs("output..vtu", exist_ok=True)
 	out_file="output..vtu/output_" + str(it) + ".vtu"
@@ -44,11 +44,11 @@ def write_file( mesh_, it):
 		file.write('5\n')
 
 	file.write('</DataArray>\n</Cells>\n<PointData Scalars="solution">\n<DataArray type="Float64" Name="Real part" format="ascii">\n')
-	for u in mesh_.U:
+	for u in U:
 		file.write(str(np.real(u)) + "\n")
 	file.write('</DataArray>\n')
 	file.write('<DataArray type="Float64" Name="Imag part" format="ascii">\n')
-	for u in mesh_.U:
+	for u in U:
 		file.write(str(np.imag(u)) + "\n")
 	file.write('</DataArray>\n')
 

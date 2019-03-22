@@ -247,7 +247,7 @@ class Mesh:
         this.matrice_A()
         this.vector_b()
         this.vector_U()
-        return 
+        return
 
 
 class Node:

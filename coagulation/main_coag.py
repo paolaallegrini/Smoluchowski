@@ -16,6 +16,19 @@ def equilibrium(Uold,U,prec=1e-04):
         return True
     return False
 
+""" Utot function 
+Calculates the sum of all concentrations U
+"""
+def Utot(U):
+    return np.array([sum(col) for col in zip(*U)])
+
+
+
+def printU(U,Ns):
+    '''Print Uold'''
+    for i in range(0,Ns):
+        print('U({})={}'.format(i,U[i]))
+
 
 'Mesh creation from msh file'
 our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
@@ -25,39 +38,44 @@ erase_files()
 '''parameters'''
 dt=1
 coeff_d=2
-Ut0=[10.0,20]
-M=np.size(Ut0)
+Ut0=[10.0, 10.0, 10.0]
+NB=np.size(Ut0)
 Itf=10000# Nb iterations
-our_mesh.init_cond(coeff_d,dt,Ut0)
 
-    
+Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
+
+
 ''' Initial situation '''
 our_mesh.maj_matrices()
+#Utotal2=Utot(our_mesh.U)
 
+#printU(Uold[0,:],our_mesh.Ns)
 
 ''' Time loop '''
-for it in range(Itf):
-
-    if((it%10==0)):
-        '''Write solution in paraview format'''
-        write_file(our_mesh,int(it/10))
-    for m in range(M):
-        Uold=our_mesh.Uold[m,:]
-        U=our_mesh.vector_U(m)
-        
-    our_mesh.t+=dt
+for it in range(Itf+1):
     
-    if equilibrium(Uold,U,prec=1e-3) :
+    if((it%10==0)):
+        #Utotal1=Utotal2
+        '''Write solution in paraview format'''
+        write_file(our_mesh,U[0,:],int(it/10))
+        
+    Uold=np.array(our_mesh.Uold)
+    U=np.array(our_mesh.vector_U())
+    our_mesh.t+=dt
+
+    if  equilibrium(Uold[0,:],U[0,:],prec=1e-5):
         print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
         break;
 
+
+#Utotal=Utot(our_mesh.U)
 '''Write Final in paraview format'''
-write_file(our_mesh,int(Itf/10))
+write_file(our_mesh,our_mesh.U[0,:],int(Itf/10))
 
 
-'''Print Uold'''
-for it in range(0,np.size(our_mesh.Uold)):
-    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
+#'''Print Utot'''
+#for i in range(0,our_mesh.Ns):
+#    print('Uold({})={}'.format(i,Uold[1,i]))
 
 '''Save animation '''
 #plot_animation(our_mesh,Uit)
@@ -65,7 +83,5 @@ for it in range(0,np.size(our_mesh.Uold)):
 #plot_mesh(our_mesh,our_mesh.U)
 #plt.subplot(212)
 #plot_quadgrid(our_mesh,our_mesh.U)
-
-
 
 
