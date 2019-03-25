@@ -36,11 +36,11 @@ erase_files()
 
 
 '''parameters'''
-dt=1
-coeff_d=2
-Ut0=[10.0, 10.0, 10.0]
+dt=0.01
+coeff_d=1
+Ut0=[10.0, 0.0,0.0,0.0,0.0,0.0]
 NB=np.size(Ut0)
-Itf=10000# Nb iterations
+Itf=5# Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
@@ -52,13 +52,16 @@ our_mesh.maj_matrices()
 #printU(Uold[0,:],our_mesh.Ns)
 
 ''' Time loop '''
-for it in range(Itf+1):
+for it in range(Itf):
+    #print("Iteration : ",it)
+#    if((it%10==0)):
+#        #Utotal1=Utotal2
+#        '''Write solution in paraview format'''
+#        write_file(our_mesh,U[0,:],int(it/10))
+    #print(U[0,:])
+    write_file(our_mesh,Utot(U),int(it))
+    #print(U[0,:])
     
-    if((it%10==0)):
-        #Utotal1=Utotal2
-        '''Write solution in paraview format'''
-        write_file(our_mesh,U[0,:],int(it/10))
-        
     Uold=np.array(our_mesh.Uold)
     U=np.array(our_mesh.vector_U())
     our_mesh.t+=dt
@@ -70,7 +73,7 @@ for it in range(Itf+1):
 
 #Utotal=Utot(our_mesh.U)
 '''Write Final in paraview format'''
-write_file(our_mesh,our_mesh.U[0,:],int(Itf/10))
+#write_file(our_mesh,our_mesh.U[0,:],int(Itf/10))
 
 
 #'''Print Utot'''

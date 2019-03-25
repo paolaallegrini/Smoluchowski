@@ -61,18 +61,19 @@ class Mesh:
         this.NB=NB
         this.Uold=this.U=this.b=np.zeros([NB,this.Ns])
         
-        ' Condition t=0 '
-        for m in range(NB):
-            this.Uold[m,:]=this.U0[m]*np.ones(this.Ns)
+#        ' Condition t=0 '
+#        for m in range(NB):
+#            this.Uold[m,:]=this.U0[m]*np.ones(this.Ns)
+#        
+#            ' Condition dirichlet '
+#            for id_s in this.Nodes_bords[1]:
+#                this.Uold[m,id_s-1] = 22
+#    
+#            for id_s in this.Nodes_bords[2]:
+#                this.Uold[m,id_s-1] = 2
+        this.Uold[0,:]=25#this.U0[0]
         
-            ' Condition dirichlet '
-            for id_s in this.Nodes_bords[1]:
-                this.Uold[m,id_s-1] = 22
-    
-            for id_s in this.Nodes_bords[2]:
-                this.Uold[m,id_s-1] = 2
-        
-        this.U=this.Uold
+        this.U=np.array(this.Uold)
         
         return this.Uold, this.U
             
@@ -123,34 +124,47 @@ class Mesh:
         - Matrix M*Ns with all the U vectors 
         - n index of the coagulation term we want ( 0->M-1)
     """
-    def Q(this,U):
+    def Qcalc(this,U):
         
         NB=this.NB #nb lignes 
-        a=0.1*np.ones((NB,NB))
+        a=0.01*np.ones((NB,NB))
         
-        Qgain=np.zeros((NB,this.Ns))
-        Qloss=np.zeros((NB,this.Ns))
+        Qgain=np.zeros((NB,this.Ns),dtype=np.float64)
+        Qloss=np.zeros((NB,this.Ns),dtype=np.float64)
         
-        for m in range(NB) :
+        for m in range(NB-1) : #no Qloss for m=NB-1
             #Qloss
             for id in range(this.Ns):
-                for j in range(NB):
-                    Qloss[m,id]+=U[j,id]*a[m,j]
+#                for j in range(NB):
+#                    Qloss[m,id]+=U[j,id]*a[m,j]
+                Qloss[m,id]=np.dot(U[:,id],a[m,:])
+                
                     
             Qloss[m,:]=Qloss[m,:]*U[m,:]
             
             #Qgain
-            if (m!=0) :
+            if (m!=0 and m!=(NB-1)) : #no Qgain for m=0 
                 for id in range(this.Ns):
                     for j in range(m):
                         ji=j+1 #car pb indice 0 
                         mi=m+1
                         Qgain[m,id]+=a[ji-1,mi-ji-1]*U[ji-1,id]*U[mi-ji-1,id]
-                    
-                #Qgain=1/2.0*Qgain
-        
+            
+            
+            if (m==(NB-1)):
+                for id in range(this.Ns):
+                    for j in range(m):
+#                        ji=j+1
+                        for k in range(m):
+#                            ki=k+1
+                            if ((j+k)>=(NB-1)):
+                                Qgain[m,id]=a[j,k]*U[j,id]*U[k,id]
         
         Q= 1/2.0*Qgain - Qloss
+        
+        #print("Qloss :\n", Qloss)
+#        print("\n U dans Q :\n",U[0,:])
+#        print("\n Q : \n",Q)
         
         return Q
 
@@ -165,14 +179,14 @@ class Mesh:
             for j in range(0, this.Ns):
                 this.A[i,j] = this.M[i,j] + this.D[i,j]
                 #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
-        
-        ' condition dirichlet bord'
-        for id_s in this.Nodes_bords[1]: # Gauche
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
-        for id_s in this.Nodes_bords[2]: # Droite
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
+#        
+#        ' condition dirichlet bord'
+#        for id_s in this.Nodes_bords[1]: # Gauche
+#            this.A[int(id_s) -1,:] = 0
+#            this.A[int(id_s) -1,int(id_s) -1] = 1
+#        for id_s in this.Nodes_bords[2]: # Droite
+#            this.A[int(id_s) -1,:] = 0
+#            this.A[int(id_s) -1,int(id_s) -1] = 1
 
         this.A=this.A.tocsr()
         return this.A
@@ -232,14 +246,20 @@ class Mesh:
         return this.D
     
     def vector_b(this):
-    
+        #print("U dans b avant Q1:\n",this.Uold[0,:])
         NB=this.NB
-        #this.b=np.zeros((NB,this.Ns))
+        this.b=np.zeros((NB,this.Ns))
+        
+        'Coagulation term'
+        Q=this.Qcalc(this.Uold)
         
         for m in range(NB): 
             #if (this.t!=0):
-            this.b[m,:]=np.dot(this.M.toarray(),this.Uold[m,:])
+            this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
             
+#            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
+
+
     #        'Condition neumann bord int fonction constante'
     #        for p in range(0,np.size(this.Bord_1)):
     #            taille=this.aire_seg(p+1,1)
@@ -250,16 +270,13 @@ class Mesh:
     #            this.b[p1-1]+=(taille/2)*this.dt
     #            this.b[p2-1]+=(taille/2)*this.dt
             
-    #        'Coagulation term'
-    #        Q=this.Q(this.Uold,m)
-    #        this.b+=Q
     
-        ' Condition dirichlet '
-        for id_s in this.Nodes_bords[1]:
-            this.b[:,id_s-1] = 22
-
-        for id_s in this.Nodes_bords[2]:
-            this.b[:,id_s-1] = 2
+#        ' Condition dirichlet '
+#        for id_s in this.Nodes_bords[1]:
+#            this.b[:,id_s-1] = 22
+#
+#        for id_s in this.Nodes_bords[2]:
+#            this.b[:,id_s-1] = 2
     
         return this.b
 
