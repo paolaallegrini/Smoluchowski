@@ -61,17 +61,17 @@ class Mesh:
         this.NB=NB
         this.Uold=this.U=this.b=np.zeros([NB,this.Ns])
         
-#        ' Condition t=0 '
-#        for m in range(NB):
-#            this.Uold[m,:]=this.U0[m]*np.ones(this.Ns)
-#        
-#            ' Condition dirichlet '
-#            for id_s in this.Nodes_bords[1]:
-#                this.Uold[m,id_s-1] = 22
-#    
-#            for id_s in this.Nodes_bords[2]:
-#                this.Uold[m,id_s-1] = 2
-        this.Uold[0,:]=25#this.U0[0]
+        ' Condition t=0 '
+        for m in range(NB):
+            this.Uold[m,:]=this.U0[m]*np.ones(this.Ns)
+        
+            ' Condition dirichlet '
+            for id_s in this.Nodes_bords[1]:
+                this.Uold[m,id_s-1] = 22
+    
+            for id_s in this.Nodes_bords[2]:
+                this.Uold[m,id_s-1] = 2
+        #this.Uold[0,:]=25#this.U0[0]
         
         this.U=np.array(this.Uold)
         
@@ -151,11 +151,11 @@ class Mesh:
                         Qgain[m,id]+=a[ji-1,mi-ji-1]*U[ji-1,id]*U[mi-ji-1,id]
             
             
-            if (m==(NB-1)):
+            if (m==(NB-1)): #special case NB
                 for id in range(this.Ns):
-                    for j in range(m):
+                    for j in range(NB-1):
 #                        ji=j+1
-                        for k in range(m):
+                        for k in range(NB-1):
 #                            ki=k+1
                             if ((j+k)>=(NB-1)):
                                 Qgain[m,id]=a[j,k]*U[j,id]*U[k,id]
@@ -179,14 +179,14 @@ class Mesh:
             for j in range(0, this.Ns):
                 this.A[i,j] = this.M[i,j] + this.D[i,j]
                 #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
-#        
-#        ' condition dirichlet bord'
-#        for id_s in this.Nodes_bords[1]: # Gauche
-#            this.A[int(id_s) -1,:] = 0
-#            this.A[int(id_s) -1,int(id_s) -1] = 1
-#        for id_s in this.Nodes_bords[2]: # Droite
-#            this.A[int(id_s) -1,:] = 0
-#            this.A[int(id_s) -1,int(id_s) -1] = 1
+        
+        ' condition dirichlet bord'
+        for id_s in this.Nodes_bords[1]: # Gauche
+            this.A[int(id_s) -1,:] = 0
+            this.A[int(id_s) -1,int(id_s) -1] = 1
+        for id_s in this.Nodes_bords[2]: # Droite
+            this.A[int(id_s) -1,:] = 0
+            this.A[int(id_s) -1,int(id_s) -1] = 1
 
         this.A=this.A.tocsr()
         return this.A
@@ -254,10 +254,11 @@ class Mesh:
         Q=this.Qcalc(this.Uold)
         
         for m in range(NB): 
-            #if (this.t!=0):
+            'With coag '
             this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
             
-#            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
+            'Only diffusion'
+            #this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
 
 
     #        'Condition neumann bord int fonction constante'
@@ -271,12 +272,12 @@ class Mesh:
     #            this.b[p2-1]+=(taille/2)*this.dt
             
     
-#        ' Condition dirichlet '
-#        for id_s in this.Nodes_bords[1]:
-#            this.b[:,id_s-1] = 22
-#
-#        for id_s in this.Nodes_bords[2]:
-#            this.b[:,id_s-1] = 2
+        ' Condition dirichlet '
+        for id_s in this.Nodes_bords[1]:
+            this.b[:,id_s-1] = 22
+
+        for id_s in this.Nodes_bords[2]:
+            this.b[:,id_s-1] = 2
     
         return this.b
 
@@ -288,6 +289,7 @@ class Mesh:
         
         for m in range(this.NB):
             this.U[m,:] = spsolve(this.A,b[m,:])
+            this.U[m,this.U[m,:]<0]=0.0   # enlever val negatives
             this.Uold[m,:]=np.array(this.U[m,:])
         
         return this.U

@@ -40,7 +40,7 @@ dt=0.01
 coeff_d=1
 Ut0=[10.0, 0.0,0.0,0.0,0.0,0.0]
 NB=np.size(Ut0)
-Itf=5# Nb iterations
+Itf=150# Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
@@ -59,7 +59,7 @@ for it in range(Itf):
 #        '''Write solution in paraview format'''
 #        write_file(our_mesh,U[0,:],int(it/10))
     #print(U[0,:])
-    write_file(our_mesh,Utot(U),int(it))
+    write_file(our_mesh,our_mesh.U,int(it))
     #print(U[0,:])
     
     Uold=np.array(our_mesh.Uold)
