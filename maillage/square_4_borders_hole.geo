@@ -32,6 +32,8 @@ Plane Surface(1) = {1,-2};//Définition d'une surface
 Physical Line("Mur")={12,34};
 Physical Line("Gauche")={41};
 Physical Line("Droit")={23};
+Physical Line("Trou")={1,2,3,4};
+
 //Physical Line("BordInt")={1,2,3,4};
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage
 

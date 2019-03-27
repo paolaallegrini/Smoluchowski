@@ -18,7 +18,7 @@ def read_file(filename):
     NumberOfSeg = 0
     Number0fElems = 0
     #NumberOfBorders =0
-    cnt_1 = cnt_2 = cnt_3 = 0 # compteurs seg dans chaque Bord
+    cnt_1 = cnt_2 = cnt_3 = cnt_4 = 0 # compteurs seg dans chaque Bord
     
     with open(filename) as f:
         content = f.readlines()
@@ -91,7 +91,9 @@ def read_file(filename):
                         
                     if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '3':
                         cnt_3 += 1
-
+                        
+                    if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '4':
+                        cnt_4 += 1
                     cnt = cnt +1
             else:
                 a = 2
@@ -104,13 +106,14 @@ def read_file(filename):
     segs_1 = np.empty(cnt_1, dtype = Segment)
     segs_2 = np.empty(cnt_2, dtype = Segment)
     segs_3 = np.empty(cnt_3, dtype = Segment)
+    segs_4 = np.empty(cnt_4, dtype = Segment)
 
     cnt = 0
     for i in range(0, Number0fNodes):
         Nodes_[ i ] = Node(i,Nodes[i][1], Nodes[i][2], Nodes[i][3])
 
 
-    ide_1 = ide_2 = ide_3 = 0
+    ide_1 = ide_2 = ide_3 = ide_4 = 0
     cntT = 0
     for i in range(0, Number0fElems):
 
@@ -139,8 +142,11 @@ def read_file(filename):
             elif Elems_i[2] == 3: # Droite
                 segs_3[ide_3] = Segment(i, Elems_i[2+nbTag:])#seg_s
                 ide_3 +=  1
+            elif Elems_i[2] == 4: # Droite
+                segs_4[ide_4] = Segment(i, Elems_i[2+nbTag:])#seg_s
+                ide_4 +=  1
                 
-    Segs=[segs_1,segs_2,segs_3]
-    Cnt_bord=[cnt_1,cnt_2,cnt_3]
+    Segs=[segs_1,segs_2,segs_3,segs_4]
+    Cnt_bord=[cnt_1,cnt_2,cnt_3,cnt_4]
     princeMesh = Mesh(Number0fNodes, Nodes_, NumberOfTr , Trs_,Segs,Cnt_bord) #def __init__(this, Format_, Ns,Nodes , Nt, Triangles):
     return princeMesh

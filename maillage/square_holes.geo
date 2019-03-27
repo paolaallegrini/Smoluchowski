@@ -149,9 +149,10 @@ Plane Surface(1) = {1,-2,-3,-4,-5,-6,-7,-8,-9,-10};//Définition d'une surface
 
 // Bord ext=1
 Physical Line("BordExt")={12,23,34,41};
-
-//Bord int = 2
-Physical Line("BordInt")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
+Physical Line("BordExt2")={12,23,34,41};
+Physical Line("BordExt3")={12,23,34,41};
+//Bord int = 2 ou 4
+Physical Line("Cercle4")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
 
 
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage
