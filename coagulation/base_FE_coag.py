@@ -13,10 +13,9 @@ Prof: Bertrand Thierry
 """
 
 import numpy as np
-from math import sqrt
+from math import sqrt,floor
 from scipy.sparse import lil_matrix
 from scipy.sparse.linalg import spsolve
-#from cmath import exp
 
 
 """
@@ -77,6 +76,14 @@ class Mesh:
         this.U=np.array(this.Uold)
         
         return this.Uold, this.U
+    
+    """ Find equilibrum
+    """
+    def equilibrium(this,U,Uold,prec=1e-04):
+        norm=np.linalg.norm(U-Uold,np.inf)
+        if norm<=prec:
+            return True
+        return False
             
     """
     finds bound's nodes' id_s
@@ -124,15 +131,35 @@ class Mesh:
 
         return (sqrt( (p1.x - p2.x)**2 + (p1.y - p2.y)**2 ))
 
+    def dtcalc(this,Qloss):
+        dt=dtemp=0.01
+        U=this.Uold
+        NB=this.NB
+        
+        for m in range(NB):       
+            if np.all(Qloss[m,:]!=0):
+                #print("dtemp, m :\n",dtemp,m)
+                dtemp=min(U[m,:]/Qloss[m,:] )           
+                if (dtemp < dt):
+                    print("m, Qlossm : ",(m,min(Qloss[m,:])))
+                    print("Um : ",min(U[m,:]))
+                    dt=round_down(dtemp)
+                    print("dt= ",dt)
+                    
+            print("dt, U[m], dt*Qloss :\n",dt,min(U[m,:]),max(dt*Qloss[m,:]))           
+        this.dt=dt
+        return this.dt
     
-    """ Coagulation term : 
+    """ Coagulation term :
         - Matrix M*Ns with all the U vectors 
         - n index of the coagulation term we want ( 0->M-1)
     """
     def Qcalc(this,U):
         
         NB=this.NB #nb lignes 
-        a=1*np.ones((NB,NB))
+        #a=1*np.ones((NB,NB))
+        alpha=10.0
+        a=np.array([[alpha/i*j for i in range(1,NB+1)] for j in range(1,NB+1)])
         
         Qgain=np.zeros((NB,this.Ns),dtype=np.float64)
         Qloss=np.zeros((NB,this.Ns),dtype=np.float64)
@@ -155,8 +182,6 @@ class Mesh:
                         mi=m+1
                         Qgain[m,id]+=a[ji-1,mi-ji-1]*U[ji-1,id]*U[mi-ji-1,id]
             
-            
-
         #special case m=NB-1
         for id in range(this.Ns):
             for j in range(NB-1):
@@ -170,7 +195,7 @@ class Mesh:
 #        print("\n U dans Q :\n",U[0,:])
 #        print("\n Q : \n",Q)
         
-        return Q
+        return Q,Qloss
 
     """
     Matrix A's calculation: 
@@ -178,10 +203,12 @@ class Mesh:
     def matrice_A(this):
         # this.A = this.M + this.D
         this.A = lil_matrix((this.Ns, this.Ns))#, dtype = np.complex)
-
-        for i in range(0, this.Ns):
-            for j in range(0, this.Ns):
-                this.A[i,j] = this.M[i,j] + this.D[i,j]
+        this.A = this.M + this.dt*this.D
+        
+        
+#        for i in range(0, this.Ns):
+#            for j in range(0, this.Ns):
+#                this.A[i,j] = this.M[i,j] + this.D[i,j]
                 #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
         
         ' condition dirichlet bord'
@@ -244,37 +271,38 @@ class Mesh:
                 I = this.Triangles[p].sommets[i]
                 for j in range(0, 3):
                     J = this.Triangles[p].sommets[j]
-                    this.D[I-1,J-1] += (this.coeff_d*this.dt)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
+                    this.D[I-1,J-1] += (this.coeff_d)*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
         
         this.D=this.D.tocsr()
         return this.D
     
-    def vector_b(this):
+    def vector_b(this,Q):
         #print("U dans b avant Q1:\n",this.Uold[0,:])
         NB=this.NB
         this.b=np.zeros((NB,this.Ns))
         
         'Coagulation term'
-        Q=this.Qcalc(this.Uold)
+        #Q=this.Qcalc(this.Uold)
         
         for m in range(NB): 
-            'With coag '
-            this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
+#            'With coag '
+#            this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
             
             'Only diffusion'
-            #this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
+            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
 
-
-        'Condition neumann bord int fonction constante /uniquement pour U[0,:]' 
+        print("avant bord",this.b[0,:])
+        'Condition neumann bord int fonction constante /uniquement pour U[0,:]=0.5' 
         for p in range(0,np.size(this.Bord_4)):
             taille=this.aire_seg(p+1,4)
             
             p1=this.Bord_4[p].sommets[0]
             p2=this.Bord_4[p].sommets[1]
             
-            this.b[0,p1-1]+=(taille/2)*this.dt*10
-            this.b[0,p2-1]+=(taille/2)*this.dt*10
-            
+            this.b[0,p1-1]+=(taille/2)*this.dt*0.5
+            this.b[0,p2-1]+=(taille/2)*this.dt*0.5
+        
+        print("après bord",this.b[0,:])
     
         ' Condition dirichlet '
 #        for id_s in this.Nodes_bords[1]:
@@ -286,18 +314,29 @@ class Mesh:
         return this.b
 
     def vector_U(this):
-#        if (this.t==0):
-#            this.U=this.Uold
-#            return
-        b=this.vector_b()
+
+        #print("\n Calculer Q ")
+        Q,Qloss=this.Qcalc(this.Uold)
+        #print("\n Q calcule")
+        this.dt=this.dtcalc(Qloss)
+        this.A=this.matrice_A()
+        b=this.vector_b(Q)
+        
+
+        #print("A=",this.A.toarray())
+        print("dt=",this.dt)
         
         for m in range(this.NB):
+            print("\n m=",m)
+            print("b=",b[m,:])
             this.U[m,:] = np.linalg.solve(this.A.toarray(),b[m,:])
-            this.U[m,this.U[m,:]<0]=0.0   # enlever val negatives
-            this.Uold[m,:]=np.array(this.U[m,:])
-
+            print("Usortie",this.U[m,:])
+            #this.U[m,this.U[m,:]<0]=0.0   # enlever val negatives
         
+        this.Uold=np.array(this.U)
+
         return this.U
+    
     
     def maj_matrices(this):
                 #matrices
@@ -305,6 +344,10 @@ class Mesh:
         this.matrice_rigidite()
         this.matrice_A()
         return
+    
+def round_down(n, decimals=5):
+    multiplier = 10 ** decimals
+    return floor(n * multiplier) / multiplier
 
 class Node:
   def __init__(this, id, x,y, z):

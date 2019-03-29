@@ -55,8 +55,6 @@ Itf=25# Nb iterations
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
 
-
-
 ''' Initial situation '''
 our_mesh.maj_matrices()
 
@@ -88,7 +86,6 @@ for it in range(Itf):
 #    if  equilibrium(Uold[:,0],U[:,0],prec=1e-4):
 #        print("U:\n",U)
 #        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
-#        break;    
-    
+#        break;
 
 

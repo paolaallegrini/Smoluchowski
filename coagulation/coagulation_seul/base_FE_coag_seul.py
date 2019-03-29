@@ -203,8 +203,6 @@ class Mesh:
         for m in range(NB-1) : #no Qloss for m=NB-1
             #Qloss
             for id in range(this.Ns):
-#                for j in range(NB):
-#                    Qloss[m,id]+=U[j,id]*a[m,j]
                 Qloss[m,id]=np.dot(U[:,id],a[m,:])
                 
                     
@@ -229,7 +227,7 @@ class Mesh:
     
     
     def dtcalc(this,Qloss):
-        dt=dtemp=0.001
+        dt=dtemp=0.1
         U=this.Uold
         NB=this.NB
         
@@ -242,7 +240,7 @@ class Mesh:
                     dt=dtemp - 0.001
                 #print("U[m], dt*Qloss :\n",min(U[m,:]),max(dt*Qloss[m,:]))           
         this.dt=dt
-        return 0.01 #this.dt
+        return this.dt
         
         
     def vector_b(this):
@@ -254,7 +252,7 @@ class Mesh:
         #print("\n Q:",Q,"\nQloss",Qloss)
         
         'Calc dt'        
-        this.dt=this.dtcalc(Qloss)        
+        this.dt=this.dtcalc(Qloss)
         print('\n dt :',this.dt)
        
         for m in range(NB): 
@@ -271,17 +269,6 @@ class Mesh:
             this.Uold[m,:]=np.array(this.U[m,:])
         
         return this.U
-
-
-
-
-
-
-
-
-
-
-
 
 
 

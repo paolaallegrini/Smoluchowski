@@ -16,25 +16,25 @@ import numpy as np
 from read_file2 import read_file
 from paraview import write_file,erase_files
 #import numpy as np
-from main_coag import equilibrium
 
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_holes.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4elems.msh")
 erase_files()
 
 
 '''parameters'''
-dt=0.001
-coeff_d=1
-Ut0=[10.0, 0.0,0.0,0.0,0.0]
+dt=1
+coeff_d=20
+Ut0=[20.0, 0.0,0.0]
 NB=np.size(Ut0)
-Itf=1000# Nb iterations
+Itf=0# Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
 ''' Initial situation '''
 our_mesh.maj_matrices()
+print("\n Matrice A1 : ",our_mesh.A)
 Z1=np.array(range(1,6))
 
 
@@ -51,9 +51,9 @@ for it in range(Itf):
     Utot=[sum(col) for col in zip(*U)]
 #    Utot2=np.dot(Z1,U)
 #    write_file(our_mesh,Utot2,int(it)) #MASS
-     write_file(our_mesh,Utot,int(it))
+    write_file(our_mesh,Utot,int(it))
     
-    if  equilibrium(Uold,U,prec=1e-4):
+    if  our_mesh.equilibrium(U,Uold,prec=1e-4):
         print("U:\n",U)
         print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
         break;

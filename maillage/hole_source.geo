@@ -29,12 +29,13 @@ Line Loop(1) = {12,23,34,41};//Définition d'un pourtour (d'un bord)
 Line Loop(2) = {1,2,3,4}; //Bord cercle
 
 Plane Surface(1) = {1,2};//Définition d'une surface
-
+Plane Surface(2) = {2};
 Physical Line("Mur")={12,34};
 Physical Line("Gauche")={41};
 Physical Line("Droit")={23};
-Physical Line("Trou")={1,2,3,4};
+//Physical Line("Trou")={1,2,3,4};
 
+Physical Surface("Centre") = {2};
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage
 
 // ctrl shift s pour fichier maillage à lire avec python
