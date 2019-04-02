@@ -29,17 +29,11 @@ def read_file(filename):
         if line[0] == '$': # reading a property
             
             property = line[1:-1]
-            if property == "MeshFormat":
-                i+= 1
-                line = content[i][0:-1]
-
-                formats = np.asarray( line.split(" ") );
-                MeshFormat = formats # check if it works 
-            elif property =="PhysicalNames":
+            if property =="PhysicalNames":
                 i+=1
                 line = content[i]
             
-                NumberOfBorders = (int)(content[i][0:-1].split(" ")[0]) -1
+                #NumberOfBorders = (int)(content[i][0:-1].split(" ")[0]) -1
                 #print("nb bords : {}".format(NumberOfBorders))
 
                 i += 1;

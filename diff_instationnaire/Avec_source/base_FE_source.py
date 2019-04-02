@@ -63,12 +63,12 @@ class Mesh:
         this.U0=U0
         this.Uold=this.U0*np.ones(this.Ns)
         
-        ' Condition dirichlet '
-        for id_s in this.Nodes_bords[1]:
-            this.Uold[id_s-1] = 22
-
-        for id_s in this.Nodes_bords[2]:
-            this.Uold[id_s-1] = 2
+#        ' Condition dirichlet '
+#        for id_s in this.Nodes_bords[1]:
+#            this.Uold[id_s-1] = 22
+#
+#        for id_s in this.Nodes_bords[2]:
+#            this.Uold[id_s-1] = 2
 
     """
     finds bound's nodes' id_s
@@ -78,7 +78,7 @@ class Mesh:
         for i in range(0,3):
             for j in range(0, this.Cnt_bord[i]):
                 for s in this.Bords[i][j].sommets:
-                    if not(s in this.Nodes_Bords[i]):
+                    if not(s in this.Nodes_bords[i]):
                         this.Nodes_bords[i].append(s)
 
         return this.Nodes_bords
@@ -89,19 +89,26 @@ class Mesh:
     def find_source_nodes(this) : 
         this.Nodes_source=[]
         for j in range(0, this.Cnt_source):
-                for s in this.source[j].sommets:
+                for s in this.Source[j].sommets:
                     if not(s in this.Nodes_source):
                         this.Nodes_source.append(s)
+                        
         return this.Nodes_source
     
 
     """
     calculates area of a triangle
     """
-    def aire_element(this, id):
-        p1 = this.Nodes[this.Triangles[id-1].sommets[0]- 1]
-        p2 = this.Nodes[this.Triangles[id-1].sommets[1]- 1]
-        p3 = this.Nodes[this.Triangles[id-1].sommets[2]- 1]
+    def aire_element(this, id,quoi=1):
+        if quoi==1:
+            p1 = this.Nodes[this.Triangles[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Triangles[id-1].sommets[1]- 1]
+            p3 = this.Nodes[this.Triangles[id-1].sommets[2]- 1]
+        elif quoi==2:
+            p1 = this.Nodes[this.Source[id-1].sommets[0]- 1]
+            p2 = this.Nodes[this.Source[id-1].sommets[1]- 1]
+            p3 = this.Nodes[this.Source[id-1].sommets[2]- 1]
+            
 
         return abs(((p2.x - p1.x)*(p3.y - p1.y) - (p3.x - p1.x)*(p2.y - p1.y)) /2.0)
 
@@ -223,10 +230,11 @@ class Mesh:
         return this.D
     
     def vector_b(this):
-        alpha2=this.coeffd/100
-        
-        this.b=np.dot(this.M.toarray(),this.Uold) + alpha2*np.dot(this.M_source.toarray(),this.Uold)
+        alpha2=0.01*this.coeff_d*this.dt
 
+        #this.b=np.dot(this.M.toarray(),this.Uold) + alpha2*np.dot(this.M_source.toarray(),this.Uold)
+        this.b=np.dot(this.M.toarray()+ alpha2*this.M_source.toarray(),this.Uold)
+        
         ' Condition dirichlet '
         for id_s in this.Nodes_bords[1]: #bord Gauche
             this.b[id_s-1] = 22
@@ -252,7 +260,7 @@ class Mesh:
         
         this.vector_b()
         this.U = spsolve(this.A, this.b)
-        this.Uold=this.U
+        this.Uold=np.array(this.U)
         return this.U
     
     def maj_matrices(this):
@@ -262,7 +270,6 @@ class Mesh:
         this.matrice_A()
         this.matrice_source()
         this.vector_b()
-        this.vector_U()
         return
 
     def matrice_source(this):
@@ -274,12 +281,16 @@ class Mesh:
                 for j in range(0, 3):
                     J = this.Source[p].sommets[j]
                     if i == j : # 2
-                        this.M_source[I-1,J-1] += this.aire_element(p+1)/6.0
+                        this.M_source[I-1,J-1] += this.aire_element(p+1,2)/6.0
                     else: # 1
-                        this.M_source[I-1,J-1] += this.aire_element(p+1)/12.0
+                        this.M_source[I-1,J-1] += this.aire_element(p+1,2)/12.0
 
         this.M_source=this.M_source.tocsr() 
         return this.M_source
+
+
+
+
 
 class Node:
   def __init__(this, id, x,y, z):

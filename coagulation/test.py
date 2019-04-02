@@ -16,11 +16,11 @@ erase_files()
 
 
 '''parameters'''
-dt=0.01
-coeff_d=0.001
-Ut0=np.zeros(1)
+dt=0.1
+coeff_d=0.01
+Ut0=[0.0]#np.zeros(1)
 NB=np.size(Ut0)
-Itf=10# Nb iterations
+Itf=1# Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 

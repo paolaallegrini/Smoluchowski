@@ -1,27 +1,27 @@
 
 /* Variables générales*/
 load "gmsh";
-mesh th=gmshload("../../maillage/square_4_borders_hole.msh");
-// plot(Th, wait= true, cmm = "Mon superbe maillage");
+mesh th=gmshload("../../maillage/hole_source.msh");
+plot(th, wait= true, cmm = "Mon superbe maillage");
 
-real dt=0.01;
-real coeffd=0.1;
-int Itf=1;
+real dt=0.1;
+real coeffd=2;
+int Itf=5;
 fespace Vh(th,P1);
 Vh uh,vh,uold;
 
 //Solve
 
 int it=0;
-uold=0;
+uold=10.0;
 
 problem Diffusion (uh , vh, solver=LU) = 
 int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+ dt*coeffd*dy(uh)*dy(vh))
 + int2d(th)(uh*vh)
 - int2d(th) (uold*vh)
-- int1d(th,4) (dt*0.5*vh);
-//+on(2,uh=22)
-//+on(3,uh=2);
+- int2d(th,4) (dt*0.01*coeffd*uold*vh)
++on(2,uh=22)
++on(3,uh=2);
 
 //Time loop
 
@@ -29,30 +29,18 @@ for ( it = 0; it <Itf ; it++ )
 {
     Diffusion;
     uold = uh;
-	if(it==0){
-	for (int j=0;j<uold[].n ; j++)
-  {
-  	cout << "uold(" << j <<")= "<< uold[][j] << endl;
-  }
-}
 
-  /*cout<< "it= " << it << endl;
+  cout<< "it= " << it << endl;
   for (int j=0;j<uold[].n ; j++)
   {
   	cout << "uold(" << j <<")= "<< uold[][j] << endl;
-  }*/
-
+  }
+/*
 	if (it==Itf-1){
 	plot(th,uh,wait=1,fill=true);
 	}
+*/
 }
-
-  for (int j=0;j<uold[].n ; j++)
-  {
-  	cout << "uold(" << j <<")= "<< uold[][j] << endl;
-  }
-
-
 
 /*vecteur B
 varf pbDiffusion (uh , vh, solver=LU) = int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+dt*coeffd*dy(uh)*dy(vh))

@@ -10,7 +10,7 @@ Line(23) = {2,3};
 Line(34) = {3,4};
 Line(41)={4,1};
 
-Rh=25;
+Rh=10;
 xc=50;
 yc=50;
 Point(5)={xc,yc,0,h}; //centre

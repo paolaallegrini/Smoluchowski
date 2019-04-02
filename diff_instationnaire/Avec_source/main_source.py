@@ -18,27 +18,38 @@ def equilibrium(Uold,U,prec=1e-04):
     return False
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/hole_source.msh")
 erase_files()
 '''parameters'''
-dt=1
+dt=0.1
 coeff_d=2
 U0=10.0
 Itf=10000# Nb iterations
 our_mesh.init_cond(coeff_d,dt,U0)
 
+''' tests'''
+#for i in range(np.size(our_mesh.Nodes_source)):
+#    print("source triangle sommets",our_mesh.Nodes_source[i])
+
 ''' Initial situation '''
 our_mesh.maj_matrices()
 
+#print("Masse source :", our_mesh.M_source)
+#print("Masse :", our_mesh.M)
+
+'''Print Uold'''
+#for it in range(0,np.size(our_mesh.Uold)):
+#    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
+
 ''' Time loop '''
 for it in range(Itf):
-
-    if((it%10==0)):
-        '''Write solution in paraview format'''
-        write_file(our_mesh,int(it/10))
+    
     Uold=our_mesh.Uold
     U=our_mesh.vector_U()
     our_mesh.t+=dt
+    if((it%10==0)):
+        '''Write solution in paraview format'''
+        write_file(our_mesh,int(it/10))
     
     if equilibrium(Uold,U,prec=1e-5) :
         print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
@@ -47,6 +58,6 @@ for it in range(Itf):
 '''Write Final in paraview format'''
 write_file(our_mesh,int(Itf/10))
 
-'''Print Uold'''
-for it in range(0,np.size(our_mesh.Uold)):
-    print('Uold({})={}'.format(it, our_mesh.Uold[it]))
+'''Write Final in paraview format'''
+#write_file(our_mesh,int(Itf))
+

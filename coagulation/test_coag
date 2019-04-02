@@ -1,0 +1,63 @@
+/* Variables générales*/
+load "gmsh";
+mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh");
+plot(th, wait= true, cmm = "Mon superbe maillage");
+
+real dt=0.1;
+real coeffd=0.01;
+int Itf=10;
+fespace Vh(th,P1);
+Vh uh,vh,uold;
+
+//Solve
+
+int it=0;
+uold=0.0;
+/*
+problem diffsource (uh , vh, solver=LU) = 
+//int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+ dt*coeffd*dy(uh)*dy(vh))
+int2d(th)(uh*vh)
+- int2d(th) (uold*vh)
+- int2d(th,4) (dt*0.5*vh);
+*/
+
+
+varf pbDiffusion (uh , vh, solver=LU) = 
+int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+ dt*coeffd*dy(uh)*dy(vh))
++int2d(th)(uh*vh)
+- int2d(th) (0.0001*vh)
+- int2d(th,2) (dt*0.5*vh);
+Vh B;
+B[] = pbDiffusion (0, Vh);
+
+{ 
+  //ofstream fout("B.txt") ;
+  for (int j=0;j<B[].n ; j++)
+  {
+  	cout <<"B("<<j<<")=" << B[][j] << endl ;
+  }
+}
+
+
+
+//Time loop
+/*
+for ( it = 0; it <Itf ; it++ ) 
+{
+    diffsource;
+    uold = uh;
+
+  cout<< "it= " << it << endl;
+  for (int j=0;j<uold[].n ; j++)
+  {
+  	cout << "uold(" << j <<")= "<< uold[][j] << endl;
+  }
+
+	if (it==Itf-1){
+	plot(th,uh,wait=1,fill=true);
+	}
+*/
+
+
+
+
