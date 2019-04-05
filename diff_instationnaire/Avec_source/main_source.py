@@ -23,8 +23,8 @@ erase_files()
 '''parameters'''
 dt=0.1
 coeff_d=2
-U0=10.0
-Itf=10000# Nb iterations
+U0=10
+Itf=10# Nb iterations
 our_mesh.init_cond(coeff_d,dt,U0)
 
 ''' tests'''

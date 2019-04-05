@@ -16,11 +16,12 @@ erase_files()
 
 
 '''parameters'''
-dt=0.1
-coeff_d=0.01
-Ut0=[0.0]#np.zeros(1)
+dt=0.01
+coeff_d=[1/i for i in range(1,17)]
+print(coeff_d)
+Ut0=np.zeros(16)
 NB=np.size(Ut0)
-Itf=1# Nb iterations
+Itf=1000# Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
@@ -37,9 +38,9 @@ for it in range(Itf):
     our_mesh.t+=our_mesh.dt
     
     #print("\n \t Un+1=\n",our_mesh.U)
-    #Utot=[sum(col) for col in zip(*U)]
+    Utot=[sum(col) for col in zip(*U)]
     
-    write_file(our_mesh,U[NB-1,:],int(it))
+    write_file(our_mesh,Utot,int(it))
     
     if  our_mesh.equilibrium(Uold[0,:],U[0,:],prec=1e-4):
         print("U:\n",U[NB-1,:])

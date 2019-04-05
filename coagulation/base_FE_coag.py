@@ -83,7 +83,7 @@ class Mesh:
             
     """ 
     finds bound's nodes' id_s (for the borders)
-    returns : list of list of ids 
+    returns : list of list of ids
     """
     def find_bords_nodes(this):
         this.Nodes_bords =[[],[],[],[]]
@@ -109,7 +109,7 @@ class Mesh:
     """
     calculates area of a line segment , 
     - id : id of segment to find it in segments arrays 
-    - quoi = 1 indicates if this segemnts belongs to an exterieur bound / or else it belongs to an internal bound
+    - quoi indicates the number of the bound, if quoi=1 id belongs to the bound_1
     """
     def aire_seg(this, id, quoi):
         if quoi == 1:
@@ -157,9 +157,9 @@ class Mesh:
     """
     def Qcalc(this,U):
         
-        NB=this.NB #total nb of clusters
+        NB=this.NB #Total number of clusters / max size of a cluster
         
-        ' Coagulation coefficient : a_ij=alpha/(i*j) '
+        ' Coagulation coefficient (matrix) : a_ij=alpha/(i*j) '
         alpha=10.0
         a=np.array([[alpha/i*j for i in range(1,NB+1)] for j in range(1,NB+1)])
         
@@ -171,14 +171,12 @@ class Mesh:
         for m in range(NB-1) : #no Qloss for m=NB-1
             #Qloss
             for id in range(this.Ns):
-#                for j in range(NB):
-#                    Qloss[m,id]+=U[j,id]*a[m,j]
                 Qloss[m,id]=np.dot(U[:,id],a[m,:])
                 
                     
             Qloss[m,:]=Qloss[m,:]*U[m,:]
             
-            ' Qgain for clusters of size 1 ... NB-2 '
+            ' Qgain for clusters 1 ... NB-2 '
             if (m!=0) : #no Qgain for m=0 
                 for id in range(this.Ns):
                     for j in range(m):
@@ -186,7 +184,7 @@ class Mesh:
                         mi=m+1
                         Qgain[m,id]+=a[ji-1,mi-ji-1]*U[ji-1,id]*U[mi-ji-1,id]
             
-        ' Special case : Qgain for cluster size NB-1 '
+        ' Special case : Qgain for cluster NB-1 '
         for id in range(this.Ns):
             for j in range(NB-1):
                 for k in range(NB-1):
@@ -196,10 +194,6 @@ class Mesh:
         ' Q total '
         Q= 1/2.0*Qgain - Qloss
         
-        #print("Qloss :\n", Qloss)
-#        print("\n U dans Q :\n",U[0,:])
-#        print("\n Q : \n",Q)
-        
         return Q,Qloss
 
     """
@@ -207,7 +201,7 @@ class Mesh:
     """
     def matrice_A(this):
         # this.A = this.M + this.D
-        this.A = lil_matrix((this.Ns, this.Ns))#, dtype = np.complex)
+        this.A = lil_matrix((this.Ns, this.Ns))
         this.A = this.M + this.dt*this.D
         
         
@@ -308,16 +302,17 @@ class Mesh:
         #print("U dans b avant Q1:\n",this.Uold[0,:])
         NB=this.NB
         this.b=np.zeros((NB,this.Ns))
+        psi=0.1
         
         'Coagulation term'
         #Q=this.Qcalc(this.Uold)
         
         for m in range(NB): 
             'With coag '
-            #this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
+            this.b[m,:]=np.dot(this.M.toarray(),this.dt*Q[m,:] + this.Uold[m,:])
             
 #            'Only diffusion'
-            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
+#            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
         #print("avant bord",this.b[0,:])
         'Condition neumann bord int fonction constante /uniquement pour U[0,:]=0.5' 
         for p in range(0,np.size(this.Bord_4)):
@@ -326,9 +321,11 @@ class Mesh:
             p1=this.Bord_4[p].sommets[0]
             p2=this.Bord_4[p].sommets[1]
             
-            this.b[0,p1-1]+=(taille/2)*this.dt*0.5
-            this.b[0,p2-1]+=(taille/2)*this.dt*0.5
-        print("\nUold=",this.Uold)
+            this.b[0,p1-1]+=(taille/2)*this.dt*psi
+            this.b[0,p2-1]+=(taille/2)*this.dt*psi
+            
+            
+        print("\nUold=",this.Uold[0,:])
         print("b0=",this.b[0,:])
         
         return this.b
@@ -339,25 +336,22 @@ class Mesh:
     
     def vector_U(this):
 
-        #print("\n Calculer Q ")
         Q,Qloss=this.Qcalc(this.Uold)
-        #print("\n Q calcule")
-        #this.dt=this.dtcalc(Qloss)
-        this.A=this.matrice_A()
-        b=this.vector_b(Q)
         
-        #print("A=",this.A.toarray())
+        this.dt=this.dtcalc(Qloss)
+        this.A=this.matrice_A() 
+        b=this.vector_b(Q)
         print("dt=",this.dt)
         
         for m in range(this.NB):
-            print("\n m=",m)
-            print("b=",b[m,:])
+#            print("\n m=",m)
+#            print("b=",b[m,:])
             this.U[m,:] = np.linalg.solve(this.A.toarray(),b[m,:])
-            print("Usortie",this.U[m,:])
+#            print("Usortie",this.U[m,:])
             #this.U[m,this.U[m,:]<0]=0.0   # enlever val negatives
         
         this.Uold=np.array(this.U)
-
+        print("Usortie",this.U[0,:])
         return this.U
     
     """ Creates the matrices M=mass, D=rigidity, A= M + dt*D
