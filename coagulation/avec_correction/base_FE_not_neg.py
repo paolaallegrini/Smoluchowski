@@ -133,7 +133,7 @@ class Mesh:
     """
 
     def dtcalc(this,Qloss):
-        dt=dtemp=0.5
+        dt=dtemp=10
         U=this.Uold
         NB=this.NB
         

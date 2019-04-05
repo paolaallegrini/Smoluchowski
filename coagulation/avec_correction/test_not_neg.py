@@ -17,10 +17,12 @@ erase_files()
 
 '''parameters'''
 dt=0.01
-coeff_d=[1/i for i in range(1,17)]
-Ut0=np.zeros(16)
-NB=np.size(Ut0)
-Itf=100# Nb iterations
+#coeff_d=[ i**(1./3.) for i in range(1,17)]
+NB=4
+coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
+Ut0=np.zeros(NB)
+
+Itf=10000 # Nb iterations
 
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
@@ -33,18 +35,20 @@ for it in range(Itf):
     Uold=np.array(our_mesh.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
     
-#    if((it%10==0)):
+#    if((it%100==0)):
 #        '''Write solution in paraview format'''
-#        write_file(our_mesh,Utot_old,int(it/10))
+#        write_file(our_mesh,Uold[NB-1,:],int(it/100))
+    
+    #write_file(our_mesh,Uold[NB-1,:],int(it))
     
     U=np.array(our_mesh.vector_U())
     Utot=[sum(col) for col in zip(*U)]
     
     our_mesh.t+=our_mesh.dt
    
-    if  our_mesh.equilibrium(np.array(Utot),np.array(Utot_old),prec=1e-5):
-        print("U:\n",U[NB-1,:])
-        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
-        break;
+#    if  our_mesh.equilibrium(np.array(U[0,:]),np.array(Uold[0,:]),prec=1e-11):
+#        print("U:\n",U[NB-1,:])
+#        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
+#        break;
         
 print("UM:\n",U[NB-1,:])

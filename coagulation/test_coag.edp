@@ -3,22 +3,50 @@ load "gmsh";
 mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh");
 plot(th, wait= true, cmm = "Mon superbe maillage");
 
-real dt=0.1;
-real coeffd=0.1;
-int Itf=10;
+
 fespace Vh(th,P1);
-Vh uh,vh,uold;
+Vh u1,u2,u3,u1old,u2old,u3old,vh;
+/*
+func Q1=-u1old*(u1old+u2old+u3old);
+func Q2=-u2old*(u1old+u2old+u3old) + u1old*u1old;
+func Q3= u1old*u2old + u2old*u1old;
+Vh Q11=Q1,Q22=Q2,Q33=Q3;
+*/
+
+//Parameters
+int it=0;
+real dt=0.01;
+real coeffd=0.1;
+int Itf=3;
+
+u1old=0.0;
+u2old=0.0;
+u3old=0.0;
+
+
 
 //Solve
+problem smu1 (u1 , vh)= 
+int2d(th) (+dt*coeffd*dx(u1)*dx(vh)+ dt*coeffd*dy(u1)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u1*vh)
+- int2d(th,qft=qf1pTlump) (u1old*vh)
+//- int2d(th)((-u1old*(u1old+u2old+u3old))*vh); 
+- int1d(th,4) (dt*0.5*vh)
+;
 
-int it=0;
-uold=0.0;
+problem smu2 (u2 , vh)= 
+int2d(th) (+dt*coeffd*dx(u2)*dx(vh)+ dt*coeffd*dy(u2)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u2*vh)
+- int2d(th)(( -u2old*(u1old+u2old+u3old) + u1old*u1old )*vh)
+- int2d(th,qft=qf1pTlump) (u2old*vh)
+;
 
-problem diffsource (uh , vh, solver=LU) = 
-+int2d(th) (+dt*coeffd*dx(uh)*dx(vh)+ dt*coeffd*dy(uh)*dy(vh))
-+int2d(th)(uh*vh)
-- int2d(th) (uold*vh)
-- int2d(th,4) (dt*0.5*vh);
+problem smu3 (u3 , vh)= 
+int2d(th) (+dt*coeffd*dx(u3)*dx(vh)+ dt*coeffd*dy(u3)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u3*vh)
+- int2d(th) ((u1old*u2old + u2old*u1old)*vh)
+- int2d(th,qft=qf1pTlump) (u3old*vh)
+;
 
 /*
 varf pbDiffusion (uh , vh, solver=LU) = 
@@ -43,18 +71,24 @@ B[] = pbDiffusion (0, Vh);
 
 for ( it = 0; it <Itf ; it++ ) 
 {
-    diffsource;
-    uold = uh;
+    smu1;
+	smu2;
+	smu3;
+	
+	u1old = u1;
+	u2old=u2;
+	u3old=u3;
 
   cout<< "it= " << it << endl;
-  for (int j=0;j<uold[].n ; j++)
+  for (int j=0;j<u1old[].n ; j++)
   {
-  	cout << "uold(" << j <<")= "<< uold[][j] << endl;
+  	cout << "u1_old(" << j <<")= "<< u1[][j] << endl;
   }
 
 	if (it==Itf-1){
-	plot(th,uh,wait=1,fill=true);
+	plot(th,u1,wait=1,fill=true);
 	}
+}
 
 
 
