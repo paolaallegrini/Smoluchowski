@@ -33,9 +33,9 @@ for it in range(Itf):
     Uold=np.array(our_mesh.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
     
-    if((it%10==0)):
-        '''Write solution in paraview format'''
-        write_file(our_mesh,Utot_old,int(it/10))
+#    if((it%10==0)):
+#        '''Write solution in paraview format'''
+#        write_file(our_mesh,Utot_old,int(it/10))
     
     U=np.array(our_mesh.vector_U())
     Utot=[sum(col) for col in zip(*U)]

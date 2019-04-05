@@ -197,12 +197,13 @@ class Mesh:
         return Q,Qloss
 
     """
-    Matrix A's calculation: 
+    Matrix A's calculation of cluster m : 
     """
-    def matrice_A(this):
+    def matrice_A(this,m=0):
         # this.A = this.M + this.D
-        this.A = lil_matrix((this.Ns, this.Ns))
-        this.A = this.M + this.dt*this.D
+        A = lil_matrix((this.Ns, this.Ns))
+        
+        A = this.M + this.dt*this.coeff_d[m]*this.D
         
         
 #        for i in range(0, this.Ns):
@@ -218,8 +219,17 @@ class Mesh:
 #            this.A[int(id_s) -1,:] = 0
 #            this.A[int(id_s) -1,int(id_s) -1] = 1
 
-        this.A=this.A.tocsr()
-        return this.A
+        A=A.tocsr()
+        return A
+    """
+    List of the NB matrices A  (coeff_d changes) : 
+    """
+    def matrices_Am(this):
+        this.Am=[]
+        for m in range(this.NB):
+            this.Am.append(this.matrice_A(m))
+        return this.Am
+    
     
     """
     Matrix B's calculation, this matrix is to be used in calculating matrix D
@@ -287,7 +297,8 @@ class Mesh:
                 I = this.Triangles[p].sommets[i]
                 for j in range(0, 3):
                     J = this.Triangles[p].sommets[j]
-                    this.D[I-1,J-1] += (this.coeff_d[m])*(this.aire_element(p+1) ) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
+                    this.D[I-1,J-1] += this.aire_element(p+1) * np.dot( np.transpose(this.grad_phi_ref[j]) ,np.dot(bTb, this.grad_phi_ref[i]))
+        
         
         this.D=this.D.tocsr()
         return this.D
@@ -340,16 +351,16 @@ class Mesh:
         Q,Qloss=this.Qcalc(this.Uold)
 
         this.dt=this.dtcalc(Qloss)
+        this.Am=this.matrices_Am()
         
         b=this.vector_b(Q)
         #print("dt=",this.dt)
         
         for m in range(this.NB):
-            this.D=this.matrice_rigidite(m)
-            this.A=this.matrice_A() 
-            this.U[m,:] = np.linalg.solve(this.A.toarray(),b[m,:])
+
+            this.U[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
             #print ('U({})={},  Q({})={}'.format(m,sum(this.Uold[m,:]),m,sum(Q[m,:])))
-       
+            
         this.Uold=np.array(this.U)
         #print("Usortie",this.U[0,:])
         return this.U
@@ -360,7 +371,7 @@ class Mesh:
     def maj_matrices(this):
         this.matrice_mass()
         this.matrice_rigidite()
-        this.matrice_A()
+        this.matrices_Am()
         return
     
 """
