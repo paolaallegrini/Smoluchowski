@@ -22,8 +22,8 @@ NB=4
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 
-Itf=10000 # Nb iterations
-
+Itf=1000 # Nb iterations
+UM=[]
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
 ''' Initial situation '''
@@ -39,16 +39,15 @@ for it in range(Itf):
 #        '''Write solution in paraview format'''
 #        write_file(our_mesh,Uold[NB-1,:],int(it/100))
     
-    #write_file(our_mesh,Uold[NB-1,:],int(it))
+    write_file(our_mesh,Uold[NB-1,:],int(it))
     
     U=np.array(our_mesh.vector_U())
     Utot=[sum(col) for col in zip(*U)]
     
     our_mesh.t+=our_mesh.dt
-   
+    #print('UM({})= {}\n'.format(it,sum(U[NB-1,:])))
+    UM.append(sum(U[NB-1,:]))
 #    if  our_mesh.equilibrium(np.array(U[0,:]),np.array(Uold[0,:]),prec=1e-11):
 #        print("U:\n",U[NB-1,:])
 #        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
 #        break;
-        
-print("UM:\n",U[NB-1,:])

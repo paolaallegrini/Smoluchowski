@@ -46,7 +46,7 @@ class Mesh:
         this.coeff_d = 20
         this.dt = 0.1
         this.U0=20
-        this.t=0
+        this.t=100
         
       
     """
@@ -56,14 +56,14 @@ class Mesh:
         this.coeff_d =coeff_d
         this.dt = dt
         this.U0=U0
-        this.Uold=this.U0*np.ones(this.Ns)
+        this.Uold=this.U0#*np.ones(this.Ns)
         
         ' Condition dirichlet '
         for id_s in this.Nodes_bords[1]:
-            this.Uold[id_s-1] = 22
+            this.Uold[id_s-1] = 10
 
-        for id_s in this.Nodes_bords[2]:
-            this.Uold[id_s-1] = 2
+#        for id_s in this.Nodes_bords[2]:
+#            this.Uold[id_s-1] = 0
 
     """
     finds bound's nodes' id_s
@@ -123,10 +123,10 @@ class Mesh:
 
         ' Condition dirichlet '
         for id_s in this.Nodes_bords[1]: #bord Gauche
-            this.b[id_s-1] = 22
+            this.b[id_s-1] = 10
 
-        for id_s in this.Nodes_bords[2]: #bord Droit
-            this.b[id_s-1] = 2
+#        for id_s in this.Nodes_bords[2]: #bord Droit
+#            this.b[id_s-1] = 0
 
         ' Condition neumann bord int fonction constante'
 #        for p in range(0,this.b_int_size):
@@ -155,9 +155,9 @@ class Mesh:
         for id_s in this.Nodes_bords[1]: # Gauche
             this.A[int(id_s) -1,:] = 0
             this.A[int(id_s) -1,int(id_s) -1] = 1
-        for id_s in this.Nodes_bords[2]: # Droite
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
+#        for id_s in this.Nodes_bords[2]: # Droite
+#            this.A[int(id_s) -1,:] = 0
+#            this.A[int(id_s) -1,int(id_s) -1] = 1
 
         this.A=this.A.tocsr()
         return this.A
@@ -191,25 +191,11 @@ class Mesh:
             for i in range(0, 3):
                 I = this.Triangles[p].sommets[i]
                 for j in range(0, 3):
-                    J = this.Triangles[p].sommets[j]
+#                    J = this.Triangles[p].sommets[j]
                     if i == j : # 2
-                        this.M[I-1,J-1] += this.aire_element(p+1)/6.0
+                        this.M[I-1,I-1] += this.aire_element(p+1)/6.0
                     else: # 1
-                        this.M[I-1,J-1] += this.aire_element(p+1)/12.0
-                        
-# 'conditon ext border robin fourier
-#        for p in range(0, this.b_ext_size):
-#            for i in range(0, 2):
-#                I = this.Bord_exts[p].sommets[i] 
-#                for j in range(0, 2):
-#                    J = this.Bord_exts[p].sommets[j]
-#                
-#                    if i == j : # 2 
-##                       this.M[I-1][J-1] += np.complex(0, -1) * (this.k) * this.aire_seg( p+1, 1 ) /3.0 # * (this.k) * this.aire_element(p)/6.0
-#                        this.M[I-1][J-1] += 20 * this.aire_seg( p+1, 1 ) /3.0
-#                    else : # 1
-##                       this.M[I-1][J-1] += np.complex(0, -1) * (this.k) * this.aire_seg( p+1, 1 )/6.0
-#                        this.M[I-1][J-1] += 20 * this.aire_seg( p+1, 1 )/6.0
+                        this.M[I-1,I-1] += this.aire_element(p+1)/12.0
 
         this.M=this.M.tocsr() 
         return this.M
@@ -231,9 +217,6 @@ class Mesh:
         return this.D
 
     def vector_U(this):
-#        if (this.t==0):
-#            this.U=this.Uold
-#            return
         
         this.vector_b()
         this.U = spsolve(this.A, this.b)
@@ -241,13 +224,17 @@ class Mesh:
         return this.U
     
     def maj_matrices(this):
-                #matrices
         this.matrice_mass()
         this.matrice_rigidite()
         this.matrice_A()
         this.vector_b()
         this.vector_U()
         return
+
+
+
+
+
 
 
 class Node:
