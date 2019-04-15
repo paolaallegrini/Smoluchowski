@@ -5,7 +5,7 @@ Created on Thu Mar  7 09:50:06 2019
 @author: Home
 """
 from read_file import read_file
-from matrices_FE import FE_method
+from matrices_FE_CN import FE_method
 import numpy as np
 from scipy.special import erf
 from math import sqrt
@@ -30,19 +30,8 @@ def vecteurX(Nodes):
         X.append(e.x)
     return np.array(X)
 
-def U_init(Tleft,Tright,Nodes,L=100):
-    U0=np.zeros(np.size(Nodes))
-    for e in Nodes :
-        if (e.x < 0):
-            U0[e.id-1]=Tleft
-        else:
-            U0[e.id-1]=Tright
-   
-    return U0
-
-
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_simple.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders16.msh")
 #erase_files()
 solve=FE_method(our_mesh)
 
@@ -50,10 +39,12 @@ solve=FE_method(our_mesh)
 '''parameters'''
 L=1000
 dt=1
-Itf=3000 # Nb iterations
+Tf=2000
+Itf=int(Tf/dt) # Nb iterations
+#dt=dt/2
+#Itf=Itf*2
 coeff_d=1
-#U0=U_init(5,15,our_mesh.Nodes)
-t=200
+t=300
 X=vecteurX(our_mesh.Nodes)
 U0=sol_exacte(X,t,coeff_d)
 
@@ -82,15 +73,14 @@ for it in range(Itf):
 #write_file(our_mesh,int(Itf/10))
 #
 '''Print Uold'''
-for it in range(0,np.size(solve.Uold)):
-    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
-
+#for it in range(0,np.size(solve.Uold)):
+#    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 
 'L2 error'
-h=L/64
+h=L/(15)
 X=vecteurX(our_mesh.Nodes)
 Uexact=sol_exacte(X,solve.t,coeff_d)
-err=sum((U-Uexact)**2)*h
+err=sqrt(sum((U-Uexact)**2)*h)
 print("Error =",err)
 
 

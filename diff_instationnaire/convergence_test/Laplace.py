@@ -32,8 +32,23 @@ class FE_method :
     """
     def init_cond(this,coeff_d):
         this.coeff_d =coeff_d
-
-
+    
+    
+    "source terme : int2d_Omega f*v"
+    def func_f(this,xm,ym) :
+        return 0.1*xm + 0.3*ym
+    
+    def U_D(this,x,y):
+        return x*x*x -3*x*y*y
+    
+    "quadrature"
+    def approx_fp(this,xm,ym,i):
+        if (i==1): #psi1(1/3)=1
+            fp=this.func_f(xm,ym)
+        else : #psi1=psi2=1/3
+            fp=1/3*this.func_f(xm,ym)
+        return fp
+    
     def matrice_rigidite(this):
         this.D = lil_matrix((this.mesh.Ns, this.mesh.Ns))
         
@@ -59,28 +74,48 @@ class FE_method :
         this.A = this.coeff_d*this.D
         
         ' condition dirichlet bord'
-        for id_s in this.mesh.Nodes_bords[1]: # Gauche
+        for id_s in this.mesh.Nodes_bords[0]:
             this.A[int(id_s) -1,:] = 0
             this.A[int(id_s) -1,int(id_s) -1] = 1
             
-        for id_s in this.mesh.Nodes_bords[2]: # Droite
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
+#        for id_s in this.mesh.Nodes_bords[2]: # Droite
+#            this.A[int(id_s) -1,:] = 0
+#            this.A[int(id_s) -1,int(id_s) -1] = 1
 
         this.A=this.A.tocsr()
         return this.A
     
+    'source term in all domain'
     
-    def vector_b(this):
+    def vectorbf(this):
+        mesh=this.mesh
+        bf=np.zeros(mesh.Ns)
         
-        this.b=np.zeros(this.mesh.Ns)
+        for p in range(mesh.Nt) :
+            xm,ym=mesh.Tk(p+1,1/3,1/3) #quadrature ordre 1, 1pt
+            
+            for i in range(0, 3):
+                I=this.mesh.Triangles[p].sommets[i]
+                bf[I]+=mesh.aire_element(p+1)*this.approx_fp(xm,ym,i)
+                
+        return bf         
+    
+    
+    def vector_b(this,Ud=10):
+        mesh=this.mesh
+        this.b=np.zeros(mesh.Ns)
 
         ' Condition dirichlet '
-        for id_s in this.mesh.Nodes_bords[1]: #bord Gauche
-            this.b[id_s-1] = 10
+        for id_s in mesh.Nodes_bords[0]: #bord Gauche
+            x=mesh.Nodes[id_s-1].x
+            y=mesh.Nodes[id_s-1].y
+            this.b[id_s-1] = this.U_D(x,y)
 
 #        for id_s in this.mesh.Nodes_bords[2]: #bord Droit
 #            this.b[id_s-1] = 0
+        
+        'source term f in all omega'
+#        this.b+=this.vector_bf()
         
         return this.b
 

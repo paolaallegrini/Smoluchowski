@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Apr 11 15:58:03 2019
+Created on Mon Apr 15 12:08:02 2019
 
 @author: Home
 """
-
 #from base_FE2 import Mesh, Node, Element, Triangle,Segment
 from scipy.sparse import lil_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve
@@ -75,9 +74,8 @@ class FE_method :
         # this.A = this.M + this.D
         #this.A = lil_matrix((this.mesh.Ns, this.mesh.Ns))#, dtype = np.complex)
 
-        this.A= lil_matrix(this.M + this.coeff_d*this.dt*this.D)
-        print("A[i,i]",this.M[1,1]+ this.dt*this.D[1,1])
-        print("A[i,j] vrai",this.A[1,1])
+        this.A= lil_matrix(this.M + this.coeff_d*this.dt*0.5*this.D)
+        
         
         ' condition dirichlet bord'
         for id_s in this.mesh.Nodes_bords[1]: # Gauche
@@ -93,7 +91,8 @@ class FE_method :
     
     def vector_b(this):
         
-        this.b=np.dot(this.M.toarray(),this.Uold)
+        this.b=np.dot(this.M.toarray() - this.coeff_d*this.dt*0.5*this.D.toarray(),this.Uold)
+
 
         ' Condition dirichlet '
         for id_s in this.mesh.Nodes_bords[1]: #bord Gauche

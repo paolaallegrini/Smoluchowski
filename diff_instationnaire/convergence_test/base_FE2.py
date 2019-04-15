@@ -52,7 +52,19 @@ class Mesh:
                         this.Nodes_bords[i].append(s)
 
         return this.Nodes_bords
-
+    
+    "Returns pts interpolation m of triangle p"
+    def Tk(this,p,xsi,eta):
+        p1 = this.Nodes[this.Triangles[id-1].sommets[0]- 1]
+        p2 = this.Nodes[this.Triangles[id-1].sommets[1]- 1]
+        p3 = this.Nodes[this.Triangles[id-1].sommets[2]- 1]
+        psi1=-xsi-eta+1
+        psi2=xsi
+        psi3=eta
+        
+        xm = psi1*p1.x + psi2*p2.x + psi3*p3.x
+        ym = psi1*p1.y + psi2*p2.y + psi3*p3.y
+        return xm,ym
 
     """
     calculates area of a triangle

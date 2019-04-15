@@ -31,7 +31,7 @@ def printU(U,Ns):
 
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_holes.msh")
 erase_files()
 
 
@@ -59,7 +59,7 @@ for it in range(Itf):
 #        '''Write solution in paraview format'''
 #        write_file(our_mesh,U[0,:],int(it/10))
     #print(U[0,:])
-    write_file(our_mesh,our_mesh.U,int(it))
+    write_file(our_mesh,our_mesh.U,"INIT")
     #print(U[0,:])
     
     Uold=np.array(our_mesh.Uold)
