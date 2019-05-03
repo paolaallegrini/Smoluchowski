@@ -98,7 +98,7 @@ class FE_method :
         this.b=np.dot(this.M.toarray() - this.coeff_d*this.dt*0.5*this.D.toarray(),this.Uold)
 
         'source term f in all omega'
-        this.b+=this.dt*0.5*this.vector_bf()
+#        this.b+=this.dt*0.5*this.vector_bf()
         
         ' Condition dirichlet '
         for id_s in this.mesh.Nodes_bords[0]: #bord
