@@ -1,15 +1,16 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar  7 09:50:06 2019
+Created on Fri May  3 11:02:10 2019
 
 @author: Home
 """
+
 from read_file import read_file
-from FE_CN_check import FE_method
-#from matrices_FE_CN import FE_method
+#from FE_CN_check import FE_method
+from matrices_FE_CN import FE_method
 from paraview import write_file
 import numpy as np
-#from scipy.special import erf
+from scipy.special import erf
 from math import sqrt,cos,sin,pi
 
 
@@ -47,16 +48,16 @@ solve=FE_method(our_mesh)
 
 '''parameters'''
 L=1
-dt=L/10
-Tf=3
+dt=1
+Tf=50
 Itf=int(Tf/dt) # Nb iterations
 #dt=dt/2
 #Itf=Itf*2
-coeff_d=1
+coeff_d=0.1
 t=0
 X,Y=vecteurX(our_mesh.Nodes)
 U0=sol_exacte(X,Y,t)
-
+U0=10*np.ones(our_mesh.Ns)
 ''' Initial situation '''
 solve.init_cond(coeff_d,dt,U0)
 #solve.t=t
@@ -87,11 +88,11 @@ Uexact=sol_exacte(X,Y,solve.t)
 for it in range(0,np.size(solve.Uold)):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 #    print('Uold({})={}'.format(it, solve.Uold[it]))
-    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],Uexact[it]))
-
+    #print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],Uexact[it]))
+    print('b({})={}'.format(it,solve.b[it]))
 
 'L2 error'
-h=L/(10)
+h=L/(8)
 #X=vecteurX(our_mesh.Nodes)
 #Uexact=sol_exacte(X,solve.t,coeff_d)
 Uexact=sol_exacte(X,Y,solve.t)

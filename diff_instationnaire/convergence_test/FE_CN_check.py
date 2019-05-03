@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
 """
-Created on Mon Apr 15 12:08:02 2019
+Created on Wed Apr 17 17:05:36 2019
 
 @author: Home
 """
+
 #from base_FE2 import Mesh, Node, Element, Triangle,Segment
 from scipy.sparse import lil_matrix, csr_matrix
 from scipy.sparse.linalg import spsolve
 import numpy as np
+from math import cos,sin,pi
 
 
 class FE_method :
@@ -28,11 +30,17 @@ class FE_method :
         this.Uold=this.U0  #*np.ones(this.Ns)
         
         ' Condition dirichlet '
-        for id_s in this.mesh.Nodes_bords[1]:
-            this.Uold[id_s-1] = 10
 
-        for id_s in this.mesh.Nodes_bords[2]:
-            this.Uold[id_s-1] = 0
+    "source terme : int2d_Omega f*v"
+    def func_f(this,xm,ym,t) :
+        dgdt=-50*sin(10*t)
+        gt=5*cos(10*t)
+        return (dgdt +5*pi*pi*gt)*sin(2*pi*xm)*cos(pi*ym)
+    
+        "quadrature"
+    def approx_fp(this,xm,ym):
+        fp=1/3*(this.func_f(xm,ym,this.t) + this.func_f(xm,ym,this.t + this.dt))
+        return fp
     
     def matrice_mass(this): #"lumped mass matrix"
         this.M = lil_matrix((this.mesh.Ns, this.mesh.Ns))
@@ -41,11 +49,11 @@ class FE_method :
             for i in range(0, 3):
                 I = this.mesh.Triangles[p].sommets[i]
                 for j in range(0, 3):
-#                    J = this.mesh.Triangles[p].sommets[j]
+                    J = this.mesh.Triangles[p].sommets[j]
                     if i == j : # 2
-                        this.M[I-1,I-1] += this.mesh.aire_element(p+1)/6.0
+                        this.M[I-1,J-1] += this.mesh.aire_element(p+1)/6.0
                     else: # 1
-                        this.M[I-1,I-1] += this.mesh.aire_element(p+1)/12.0
+                        this.M[I-1,J-1] += this.mesh.aire_element(p+1)/12.0
     
         #this.M=this.M.tocsr() 
         return this.M
@@ -78,11 +86,7 @@ class FE_method :
         
         
         ' condition dirichlet bord'
-        for id_s in this.mesh.Nodes_bords[1]: # Gauche
-            this.A[int(id_s) -1,:] = 0
-            this.A[int(id_s) -1,int(id_s) -1] = 1
-            
-        for id_s in this.mesh.Nodes_bords[2]: # Droite
+        for id_s in this.mesh.Nodes_bords[0]: # Gauche
             this.A[int(id_s) -1,:] = 0
             this.A[int(id_s) -1,int(id_s) -1] = 1
 
@@ -93,12 +97,11 @@ class FE_method :
         
         this.b=np.dot(this.M.toarray() - this.coeff_d*this.dt*0.5*this.D.toarray(),this.Uold)
 
-
+        'source term f in all omega'
+        this.b+=this.dt*0.5*this.vector_bf()
+        
         ' Condition dirichlet '
-        for id_s in this.mesh.Nodes_bords[1]: #bord Gauche
-            this.b[id_s-1] = 10
-
-        for id_s in this.mesh.Nodes_bords[2]: #bord Droit
+        for id_s in this.mesh.Nodes_bords[0]: #bord
             this.b[id_s-1] = 0
 
         ' Condition neumann bord int fonction constante'
@@ -110,6 +113,19 @@ class FE_method :
 #            this.b[p2]+=taille*this.u_inc()
         
         return this.b
+    
+    'source term in all domain'
+    
+    def vector_bf(this):
+        mesh=this.mesh
+        bf=np.zeros(mesh.Ns)        
+        for p in range(mesh.Nt) :
+            xm,ym=mesh.Tk(p+1,1/3,1/3) #quadrature ordre 1, 1pt
+            
+            for i in range(0, 3):
+                I=mesh.Triangles[p].sommets[i]
+                bf[I-1]+=mesh.aire_element(p+1)*this.approx_fp(xm,ym)     
+        return bf
 
     def vector_U(this):
         this.vector_b()

@@ -1,0 +1,122 @@
+//
+// Testing Crank-Nicolson for heat equation
+//
+// Using of keyword:problem
+//
+//----------------------------------------------------------------
+// Definition of the domain: D={square [0,1]x[-0.5,0.5]}
+//
+//    then u(t,x,y)=g(t)*sin(2*pi*x)cos(pi*y) is cero on boundary of D all time
+//
+//         u_t(t,x,y)=dgdt(t)*sin(2*pi*x)cos(pi*y)
+//         u_{xx}(t,x,y)=-4*pi^2*u(t,x,y)
+//         u_{yy}(t,x,y)=-pi^2*u(t,x,y)
+//
+// As a consequence 
+//  
+//     u_t-Lap(u)=dgdt(t)*sin(2*pi*x)*cos(pi*y)+5*pi^2*g(t)*sin(2*pi*x)*cos(pi*y)
+//               
+//
+
+verbosity=0;
+func real g(real t){
+	real s= 5*cos(10*t);//-t^3-t^2+1;
+return s;
+}
+func real dgdt(real t){
+	real s=-50*sin(10*t);// -3*t^2-2*t;
+return s;
+}
+//int factor=1;
+//int m=10*factor;// number of points
+//mesh th=square(m,m,[x,-.5+y]);
+load "gmsh";
+mesh th=gmshload("../../maillage/mesh_laplace.msh");
+real h=1.0/10;// size of h
+real dt=h;// size of dt
+//
+// Definition of the axis OX-OY just for fun
+//
+border OX(t=-0.5,1){x=t;y=0;}
+border OY(t=-0.5,1){x=0;y=t;}
+// plot initial mesh
+plot(th,OX(1),OY(1),wait=0);
+//
+// Definition of the fespace
+//
+fespace Vh(th,P1);
+Vh u,v;
+
+
+Vh u0=g(0)*sin(2*pi*x)*cos(pi*y);// initial data
+Vh fh1,fh0;// force terms at time levels t^{n+1} and t^n respectively
+// 
+// plot initial data
+//
+plot(u0,OX(1),OY(1),fill=1,dim=3,wait=0);
+//
+// Heat equation u_t-Lap(u)=f solved by Crank-Nicolson
+//               u(t=0)=u0
+//               u=0 on boundary for all t
+//
+// u^n means u at time level t^n
+//
+//      (u^{n+1}-u^n)/dt-(Lap(u^{n+1})+Lap(u^n))/2=(f^{n+1}+f^{n})/2
+//
+// or 
+//    u^{n+1}-(dt/2)*Lap(u^{n+1})=u^n+(dt/2)*Lap(u^{n})
+//                                     +(dt/2)*(f^{n+1}+f^{n})
+// Variational formulation
+//                 (u,v) means integral on computational domain
+//
+//     (u^{n+1},v)+(dt/2)*(Grad (u^{n+1}),Grad(v))=
+//                (u^n,v)-(dt/2)*(Grad(u^{n}),Grad(v))
+//                                     +(dt/2)*((f^{n+1}+f^{n}),v)
+
+
+problem heat(u,v)=int2d(th)(
+                             u*v+0.5*dt*(dx(u)*dx(v)+dy(u)*dy(v))
+                           )
+                 -int2d(th)(
+                             u0*v-0.5*dt*(dx(u0)*dx(v)+dy(u0)*dy(v))
+                           )
+                 -int2d(th)(0.5*dt*(fh1+fh0)*v
+                           )
+                   +on(1,u=0);
+
+real t=0;// initial time
+real tf=3;// final time
+real errL2sq=0,errH1sq=0;// to hold errors                 
+  for(int n=0;n<tf/dt;n++)      
+        { fh0=(dgdt(t)+5*pi^2*g(t))*sin(2*pi*x)*cos(pi*y);
+          t=t+dt;
+        fh1=(dgdt(t)+5*pi^2*g(t))*sin(2*pi*x)*cos(pi*y);
+        heat;
+        Vh uexh=g(t)*sin(2*pi*x)*cos(pi*y);
+        Vh dxuexh=2*pi*g(t)*cos(2*pi*x)*cos(pi*y);
+        Vh dyuexh=-pi*g(t)*sin(2*pi*x)*sin(pi*y);
+        //Error computing
+        real locL2=int2d(th)((u-uexh)^2);
+        real locH1=locL2+int2d(th)((dx(u)-dxuexh)^2)+int2d(th)((dy(u)-dyuexh)^2);
+
+         errL2sq=max(errL2sq,locL2);
+         errH1sq=errH1sq+dt*locH1;
+    
+        //plot(cmm="Approximated solution at time "+t,u,
+        //OX(1),OY(1),fill=1,dim=3,wait=0,value=1);
+        //plot(cmm="Approximated solution at time "+t,errf,fill=1,dim=3,wait=0,value=1);
+        u0=u;
+      
+        }
+        //Errors in time
+real errLiL2 = sqrt(errL2sq);
+real errL2H1 = sqrt(errH1sq);
+cout << "Using Crank-Nicolson  " <<endl;
+cout << "Errors at time  T = " << tf<<"  using dt=dh = " << dt << endl;
+cout << "Errors : Linfty(L2) " << errLiL2 << "  L2(H1)  " << errL2H1 << endl;
+
+for (int j=0;j<u[].n ; j++)
+  {
+  	cout << "u(" << j <<")= "<< u[][j] << endl;
+  }
+                 

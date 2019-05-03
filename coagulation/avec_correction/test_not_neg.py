@@ -16,9 +16,9 @@ erase_files()
 
 
 '''parameters'''
-dt=0.01
+dt=1
 #coeff_d=[ i**(1./3.) for i in range(1,17)]
-NB=4
+NB=16
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 
@@ -39,7 +39,7 @@ for it in range(Itf):
 #        '''Write solution in paraview format'''
 #        write_file(our_mesh,Uold[NB-1,:],int(it/100))
     
-    write_file(our_mesh,Uold[NB-1,:],int(it))
+    #write_file(our_mesh,Uold[NB-1,:],int(it))
     
     U=np.array(our_mesh.vector_U())
     Utot=[sum(col) for col in zip(*U)]
@@ -51,3 +51,6 @@ for it in range(Itf):
 #        print("U:\n",U[NB-1,:])
 #        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
 #        break;
+write_file(our_mesh,Uold[0,:],int(11))
+write_file(our_mesh,Uold[4,:],int(55))
+write_file(our_mesh,Uold[NB-1,:],int(NB))

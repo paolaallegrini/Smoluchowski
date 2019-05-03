@@ -48,17 +48,17 @@ class Mesh:
         for i in range(0,3):
             for j in range(0, this.Cnt_bord[i]):
                 for s in this.Bords[i][j].sommets:
-                    if not(s in this.Bords[i]):
+                    if not(s in this.Nodes_bords[i]):
                         this.Nodes_bords[i].append(s)
 
         return this.Nodes_bords
     
     "Returns pts interpolation m of triangle p"
-    def Tk(this,p,xsi,eta):
+    def Tk(this,id,xsi,eta):
         p1 = this.Nodes[this.Triangles[id-1].sommets[0]- 1]
         p2 = this.Nodes[this.Triangles[id-1].sommets[1]- 1]
         p3 = this.Nodes[this.Triangles[id-1].sommets[2]- 1]
-        psi1=-xsi-eta+1
+        psi1=1-xsi-eta
         psi2=xsi
         psi3=eta
         
