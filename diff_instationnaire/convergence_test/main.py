@@ -36,7 +36,7 @@ def vecteurX(Nodes):
     Y=[]
     for e in Nodes :
         X.append(e.x)
-        Y.append(e.x)
+        Y.append(e.y)
     return np.array(X),np.array(Y)
 
 'Mesh creation from msh file'
@@ -47,7 +47,8 @@ solve=FE_method(our_mesh)
 
 '''parameters'''
 L=1
-dt=L/10
+h=L/(20)
+dt=h
 Tf=3
 Itf=int(Tf/dt) # Nb iterations
 #dt=dt/2
@@ -72,8 +73,7 @@ for it in range(Itf):
 #        write_file(our_mesh,int(it/10))
     Uold=solve.Uold
     U=solve.vector_U()
-    solve.t+=dt
-    
+    solve.t+=dt    
 #    if equilibrium(Uold,U,prec=1e-5) :
 #        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
 #        break;
@@ -81,21 +81,18 @@ for it in range(Itf):
 #'''Write Final in paraview format'''
 write_file(our_mesh,solve.U,"Fin")
 #
-Uexact=sol_exacte(X,Y,solve.t)
+Uexact=sol_exacte(X,Y,3)
 
-'''Print Uold'''
-for it in range(0,np.size(solve.Uold)):
+'''Print U'''
+print(solve.t)
+for it in range(0,np.size(solve.U)):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 #    print('Uold({})={}'.format(it, solve.Uold[it]))
-    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],Uexact[it]))
-
+    print('U({})={}, Uexacte={}'.format(it, solve.U[it],Uexact[it]))
 
 'L2 error'
-h=L/(10)
 #X=vecteurX(our_mesh.Nodes)
 #Uexact=sol_exacte(X,solve.t,coeff_d)
 Uexact=sol_exacte(X,Y,solve.t)
 err=sqrt(sum((U-Uexact)**2)*h)
 print("Error =",err)
-
-

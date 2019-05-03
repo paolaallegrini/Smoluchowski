@@ -37,7 +37,7 @@ class FE_method :
         gt=5*cos(10*t)
         return (dgdt +5*pi*pi*gt)*sin(2*pi*xm)*cos(pi*ym)
     
-        "quadrature"
+    "quadrature"
     def approx_fp(this,xm,ym):
         fp=1/3*(this.func_f(xm,ym,this.t) + this.func_f(xm,ym,this.t + this.dt))
         return fp
@@ -55,7 +55,7 @@ class FE_method :
                     else: # 1
                         this.M[I-1,J-1] += this.mesh.aire_element(p+1)/12.0
     
-        #this.M=this.M.tocsr() 
+#        this.M=this.M.tocsr()
         return this.M
 
     def matrice_rigidite(this):
@@ -71,7 +71,7 @@ class FE_method :
                     J = this.mesh.Triangles[p].sommets[j]
                     this.D[I-1,J-1] += (this.mesh.aire_element(p+1) ) * np.dot( np.transpose(this.mesh.grad_phi_ref[j]) ,np.dot(bTb, this.mesh.grad_phi_ref[i]))
         
-        #this.D=this.D.tocsr()
+#        this.D=this.D.tocsr()
         return this.D
     
 
@@ -82,8 +82,8 @@ class FE_method :
         # this.A = this.M + this.D
         #this.A = lil_matrix((this.mesh.Ns, this.mesh.Ns))#, dtype = np.complex)
 
-        this.A= lil_matrix(this.M + this.coeff_d*this.dt*0.5*this.D)
-        
+        #this.A= lil_matrix(this.M + this.coeff_d*this.dt*0.5*this.D)
+        this.A=(this.M.tocsr() + this.coeff_d*this.dt*0.5*this.D.tocsr()).tolil()
         
         ' condition dirichlet bord'
         for id_s in this.mesh.Nodes_bords[0]: # Gauche
@@ -98,7 +98,7 @@ class FE_method :
         this.b=np.dot(this.M.toarray() - this.coeff_d*this.dt*0.5*this.D.toarray(),this.Uold)
 
         'source term f in all omega'
-#        this.b+=this.dt*0.5*this.vector_bf()
+        this.b+=this.dt*0.5*this.vector_bf()
         
         ' Condition dirichlet '
         for id_s in this.mesh.Nodes_bords[0]: #bord
@@ -139,6 +139,6 @@ class FE_method :
         this.matrice_mass()
         this.matrice_rigidite()
         this.matrice_A()
-        this.vector_b()
-        this.vector_U()
+#        this.vector_b()
+#        this.vector_U()
         return

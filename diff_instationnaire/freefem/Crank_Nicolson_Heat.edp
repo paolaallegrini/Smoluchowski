@@ -32,7 +32,7 @@ return s;
 //mesh th=square(m,m,[x,-.5+y]);
 load "gmsh";
 mesh th=gmshload("../../maillage/mesh_laplace.msh");
-real h=1.0/10;// size of h
+real h=1.0/20;// size of h
 real dt=h;// size of dt
 //
 // Definition of the axis OX-OY just for fun
@@ -74,6 +74,7 @@ plot(u0,OX(1),OY(1),fill=1,dim=3,wait=0);
 //                                     +(dt/2)*((f^{n+1}+f^{n}),v)
 
 
+
 problem heat(u,v)=int2d(th)(
                              u*v+0.5*dt*(dx(u)*dx(v)+dy(u)*dy(v))
                            )
@@ -105,9 +106,9 @@ real errL2sq=0,errH1sq=0;// to hold errors
         //plot(cmm="Approximated solution at time "+t,u,
         //OX(1),OY(1),fill=1,dim=3,wait=0,value=1);
         //plot(cmm="Approximated solution at time "+t,errf,fill=1,dim=3,wait=0,value=1);
-        u0=u;
-      
+        u0=u;      
         }
+
         //Errors in time
 real errLiL2 = sqrt(errL2sq);
 real errL2H1 = sqrt(errH1sq);
@@ -115,8 +116,11 @@ cout << "Using Crank-Nicolson  " <<endl;
 cout << "Errors at time  T = " << tf<<"  using dt=dh = " << dt << endl;
 cout << "Errors : Linfty(L2) " << errLiL2 << "  L2(H1)  " << errL2H1 << endl;
 
+ Vh uexfin=g(3)*sin(2*pi*x)*cos(pi*y);
+
 for (int j=0;j<u[].n ; j++)
   {
   	cout << "u(" << j <<")= "<< u[][j] << endl;
+	//cout << "uexact(" << j <<")= "<< uexfin[][j] << endl;
   }
                  

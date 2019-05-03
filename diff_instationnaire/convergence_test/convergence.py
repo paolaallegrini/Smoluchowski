@@ -173,7 +173,14 @@ Pt=[math.log1p(e120[e]/e120[e+1])/math.log(2) for e in range(4)]
 print('Pt :', Pt)
 #################################################
 
-
+"""Convergence in time Cranck Nicholson
+test case freefem https://www.um.es/freefem/ff++/pmwiki.php?n=Main.CN
+L=1; h=L/120, Tf=1000, tinit=300
+"""
+dt=h=[L/8,L/16,L/32,L/64]
+e120=[0.18737218266263952, 0.056282406426592546, 0.019352862285172013, 0.0013000013541423997]
+Pt=[math.log(e120[e]/e120[e+1])/math.log(2) for e in range(3)]
+print('Pt1 :', Pt)
 
 
 #e1=[0.5631527342862813, 0.1392650950012512, 0.07922321976162881]
