@@ -81,7 +81,7 @@ for it in range(Itf):
 #'''Write Final in paraview format'''
 write_file(our_mesh,solve.U,"Fin")
 #
-Uexact=sol_exacte(X,Y,3)
+Uexact=sol_exacte(X,Y,Tf)
 
 '''Print U'''
 print(solve.t)

@@ -149,7 +149,7 @@ class Mesh:
 #            print("dt, U[m], dt*Qloss :\n",dt,min(U[m,:]),max(dt*Qloss[m,:]))           
 #        print("dt= ",dt)
         this.dt=dt
-        return this.dt
+        return 0.06#this.dt
     
     """ Coagulation term :
         - Matrix NB*Ns with all the U vectors 
@@ -354,7 +354,7 @@ class Mesh:
         this.Am=this.matrices_Am()
         
         b=this.vector_b(Q)
-        #print("dt=",this.dt)
+        print("dt=",this.dt)
         
         for m in range(this.NB):
 

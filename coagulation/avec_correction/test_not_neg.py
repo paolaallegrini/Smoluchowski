@@ -16,13 +16,13 @@ erase_files()
 
 
 '''parameters'''
-dt=1
-#coeff_d=[ i**(1./3.) for i in range(1,17)]
-NB=16
-coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
+dt=0.06
+NB=3
+#coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
+coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
-
-Itf=1000 # Nb iterations
+Tf=3
+Itf=2#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=our_mesh.init_cond(coeff_d,dt,Ut0)
 
@@ -51,6 +51,24 @@ for it in range(Itf):
 #        print("U:\n",U[NB-1,:])
 #        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
 #        break;
-write_file(our_mesh,Uold[0,:],int(11))
-write_file(our_mesh,Uold[4,:],int(55))
 write_file(our_mesh,Uold[NB-1,:],int(NB))
+
+cl=1
+print("Itf",Itf)
+for it in range(0,np.size(U[cl,:])):
+#    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
+#    print('Uold({})={}'.format(it, solve.Uold[it]))
+    print('U_{}({})={},'.format(cl,it, U[cl,it],))
+
+#'L2 error'
+##X=vecteurX(our_mesh.Nodes)
+##Uexact=sol_exacte(X,solve.t,coeff_d)
+#Uexact=sol_exacte(X,Y,solve.t)
+#err=sqrt(sum((U-Uexact)**2)*h)
+#print("Error =",err)
+
+
+
+
+
+

@@ -1,6 +1,6 @@
 Mesh.MshFileVersion = 2.2;
 t=100;
-h =t/30 ; //Taille caractéristique des éléménts, précision du maillage
+h =t/10 ; //Taille caractéristique des éléménts, précision du maillage
 Point(1) = {0, 0, 0, h};   // Construction des points ext
 Point(2) = {t, 0, 0, h};
 Point(3) = {t, t, 0, h};
