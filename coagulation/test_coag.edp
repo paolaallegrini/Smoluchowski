@@ -20,7 +20,7 @@ real coeffd=0.1;
 real psi=0.5;
 real t=0;// initial time
 real tf=3;// final time 
-real Itf=tf/dt; //nb iterations
+real Itf=5;//tf/dt; //nb iterations
 
 u1old=0.0;
 u2old=0.0;
@@ -33,22 +33,22 @@ problem smu1 (u1 , vh)=
 int2d(th) (+dt*coeffd*dx(u1)*dx(vh)+ dt*coeffd*dy(u1)*dy(vh))
 + int2d(th,qft=qf1pTlump)(u1*vh)
 - int2d(th,qft=qf1pTlump) (u1old*vh)
-- int2d(th)((-u1old*(u1old+u2old+u3old))*vh)
+- int2d(th,qft=qf1pTlump)(dt*(-u1old*(u1old+u2old+u3old))*vh)
 - int1d(th,4) (dt*psi*vh)
 ;
 
 problem smu2 (u2 , vh)= 
 int2d(th) (+dt*coeffd*dx(u2)*dx(vh)+ dt*coeffd*dy(u2)*dy(vh))
 + int2d(th,qft=qf1pTlump)(u2*vh)
-- int2d(th)(( -u2old*(u1old+u2old+u3old) + u1old*u1old )*vh)
 - int2d(th,qft=qf1pTlump) (u2old*vh)
+- int2d(th,qft=qf1pTlump)(dt*( -u2old*(u1old+u2old+u3old) + 0.5*u1old*u1old )*vh)
 ;
 
 problem smu3 (u3 , vh)= 
 int2d(th) (+dt*coeffd*dx(u3)*dx(vh)+ dt*coeffd*dy(u3)*dy(vh))
 + int2d(th,qft=qf1pTlump)(u3*vh)
-- int2d(th) ((u1old*u2old + u2old*u1old)*vh)
 - int2d(th,qft=qf1pTlump) (u3old*vh)
+- int2d(th,qft=qf1pTlump) (dt*0.5*(u1old*u2old + u2old*u1old +u2old*u2old)*vh)
 ;
 //Time loop
 
@@ -57,10 +57,30 @@ for ( it = 0; it <Itf ; it++)
     smu1;
 	smu2;
 	smu3;
+
+	Vh Q1=(-u1old*(u1old+u2old+u3old));
+	Vh Q2= -u2old*(u1old+u2old+u3old) + 0.5*u1old*u1old ;
+	Vh Q3=0.5*(u1old*u2old + u2old*u1old +u2old*u2old);
+	 for (int j=0;j<u1old[].n ; j++)
+  {
+	//cout << "Q1_old(" << j <<")= "<< Q1[][j] << endl;
+//	cout << "Q2_old(" << j <<")= "<< Q2[][j] << endl;
+	cout << "Q3_old(" << j <<")= "<< Q3[][j] << endl;
+  }
+	cout << "\n" << endl;
 	
 	u1old = u1;
 	u2old=u2;
 	u3old=u3;
+	for (int j=0;j<u1old[].n ; j++)
+  {
+//	cout << "u1_old(" << j <<")= "<< u1[][j] << endl;
+//	cout << "u2_old(" << j <<")= "<< u2[][j] << endl;
+	cout << "u3_old(" << j <<")= "<< u3[][j] << endl;
+  }
+	cout << "\n" << endl;
+
+
 
 	if (it==Itf-1){
 	plot(th,u1,wait=1,fill=true);
@@ -68,10 +88,6 @@ for ( it = 0; it <Itf ; it++)
 }
 
   cout<< "it= " << it << endl;
-  for (int j=0;j<u1old[].n ; j++)
-  {
-  	cout << "u1_old(" << j <<")= "<< u1[][j] << endl;
-  }
-
+ 
 
 

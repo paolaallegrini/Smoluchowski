@@ -149,7 +149,7 @@ class Mesh:
 #            print("dt, U[m], dt*Qloss :\n",dt,min(U[m,:]),max(dt*Qloss[m,:]))           
 #        print("dt= ",dt)
         this.dt=dt
-        return 0.06#this.dt
+        return this.dt
     
     """ Coagulation term :
         - Matrix NB*Ns with all the U vectors 
@@ -162,7 +162,7 @@ class Mesh:
         ' Coagulation coefficient (matrix) : a_ij=alpha/(i*j) '
         alpha=10.0
         a=np.array([[alpha/i*j for i in range(1,NB+1)] for j in range(1,NB+1)])
-        
+
         ' Calculates Qgain and Qloss '
         Qgain=np.zeros((NB,this.Ns),dtype=np.float64)
         Qloss=np.zeros((NB,this.Ns),dtype=np.float64)
@@ -184,13 +184,15 @@ class Mesh:
                         mi=m+1
                         Qgain[m,id]+=a[ji-1,mi-ji-1]*U[ji-1,id]*U[mi-ji-1,id]
             
+            
         ' Special case : Qgain for cluster NB-1 '
         for id in range(this.Ns):
             for j in range(NB-1):
+                ji=j+1
                 for k in range(NB-1):
-                    if ((j+k)>=(NB-1)):
-                        Qgain[NB-1,id]=a[j,k]*U[j,id]*U[k,id]
-        
+                    ki=k+1
+                    if ((ji+ki)>=NB):
+                        Qgain[NB-1,id]+=a[j,k]*U[j,id]*U[k,id]
         ' Q total '
         Q= 1/2.0*Qgain - Qloss
         
@@ -353,9 +355,7 @@ class Mesh:
         this.dt=this.dtcalc(Qloss)
         this.Am=this.matrices_Am()
         
-        b=this.vector_b(Q)
-        print("dt=",this.dt)
-        
+        b=this.vector_b(Q)        
         for m in range(this.NB):
 
             this.U[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
