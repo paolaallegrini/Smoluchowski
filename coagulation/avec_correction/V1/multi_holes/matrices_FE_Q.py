@@ -63,7 +63,7 @@ class FE_method :
     """
 
     def dtcalc(this,Qloss):
-        dt=dtemp=10
+        dt=dtemp=1
         U=this.Uold
         NB=this.NB
         
@@ -133,25 +133,8 @@ class FE_method :
     """
     def matrice_A(this,m=0):
         mesh=this.mesh
-        # this.A = this.M + this.D
         A = lil_matrix((mesh.Ns, mesh.Ns))
-        
         A = this.M + this.dt*this.coeff_d[m]*this.D
-        
-        
-#        for i in range(0, this.Ns):
-#            for j in range(0, this.Ns):
-#                this.A[i,j] = this.M[i,j] + this.D[i,j]
-                #print ('I ={} J={} M={} D={} A={}'.format(i, j,this.M[i][j],this.D[i][j], this.A[i][j]))
-        
-        ' condition dirichlet bord'
-#        for id_s in this.Nodes_bords[1]: # Gauche
-#            this.A[int(id_s) -1,:] = 0
-#            this.A[int(id_s) -1,int(id_s) -1] = 1
-#        for id_s in this.Nodes_bords[2]: # Droite
-#            this.A[int(id_s) -1,:] = 0
-#            this.A[int(id_s) -1,int(id_s) -1] = 1
-
         A=A.tocsr()
         return A
     """
@@ -165,12 +148,13 @@ class FE_method :
     
     
     """
-    Mass matrix :
+    Mass matrix :   
         - form : int2d_Omega phi_I*phi_J
+    'lumped mass matrix'
     """
-    def matrice_mass(this):
+    def matrice_mass(this): 
         mesh=this.mesh
-        this.M = lil_matrix((mesh.Ns, mesh.Ns))#, dtype = np.complex)
+        this.M = lil_matrix((mesh.Ns, mesh.Ns))
         
         ' Browses each triangle and adds the elementary contribution on the right node coords '
         for p in range(0, mesh.Nt): 
@@ -210,12 +194,15 @@ class FE_method :
                 for j in range(0, 3):
                     J = mesh.Triangles[p].sommets[j]
                     this.D[I-1,J-1] += mesh.aire_element(p+1) * np.dot( np.transpose(mesh.grad_phi_ref[j]) ,np.dot(bTb, mesh.grad_phi_ref[i]))
-        
-        
         this.D=this.D.tocsr()
         return this.D
     
-    
+    """
+    func psi different for each neuron
+    """
+    def func_psi(this,idb):
+        return idb+1/this.mesh.NbBords
+        
     """
     Vector b  :
         b= int2d_Omega (Uold*v) + dt*int2d_Omega (Q(Uold)*v) + Neumann cond
@@ -226,11 +213,10 @@ class FE_method :
     """
     
     def vector_b(this,Q):
-        #print("U dans b avant Q1:\n",this.Uold[0,:])
         NB=this.NB
         mesh=this.mesh
         this.b=np.zeros((NB,mesh.Ns))
-        psi=0.5
+#        psi=0.5
         
         for m in range(NB): 
             'With coag '
@@ -240,18 +226,15 @@ class FE_method :
 #            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
             
         'Condition neumann bord int fonction constante /uniquement pour U[0,:]=0.5' 
-        for p in range(0,np.size(mesh.Bord_4)):
-            taille=mesh.aire_seg(p+1,4)
-            
-            p1=mesh.Bord_4[p].sommets[0]
-            p2=mesh.Bord_4[p].sommets[1]
-            
-            this.b[0,p1-1]+=(taille/2)*this.dt*psi
-            this.b[0,p2-1]+=(taille/2)*this.dt*psi
-            
-            
-        #print("\nUold=",this.Uold[0,:])
-        #print("b0=",this.b[0,:])
+        for idb in range(mesh.NbBords):
+            for p in range(0,np.size(mesh.Bords[idb])):
+                taille=mesh.aire_seg(p+1,idb)
+                
+                p1=mesh.Bords[idb][p].sommets[0]
+                p2=mesh.Bords[idb][p].sommets[1]
+                
+                this.b[0,p1-1]+=(taille/2)*this.dt*this.func_psi(idb)
+                this.b[0,p2-1]+=(taille/2)*this.dt*this.func_psi(idb)
         
         return this.b
     
@@ -269,7 +252,6 @@ class FE_method :
         for m in range(this.NB):
 
             this.U[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
-            #print ('U({})={},  Q({})={}'.format(m,sum(this.Uold[m,:]),m,sum(Q[m,:])))
             
         this.Uold=np.array(this.U)
 

@@ -28,11 +28,8 @@ class Mesh:
         
         #inter and exter borders
         this.Cnt_bord = Cnt_bord # list nb vertices/ border
+        this.NbBords = len(Cnt_bord)
         this.Bords = Segs 
-        this.Bord_1 = Segs[0] # Mur ou Ext
-        this.Bord_2 = Segs[1] # Gauche ou Int
-        this.Bord_3 = Segs[2] # Droite
-        this.Bord_4 = Segs[3] # Cercle
         
         #find border nodes
         this.Nodes_bords=this.find_bords_nodes() # list with list of nodes for each border
@@ -42,11 +39,11 @@ class Mesh:
     returns : list of list of ids
     """
     def find_bords_nodes(this):
-        this.Nodes_bords =[[],[],[],[]]
-        for i in range(0,4):
+        this.Nodes_bords = [ [] for _ in range(this.NbBords)]
+        for i in range(0,this.NbBords):
             for j in range(0, this.Cnt_bord[i]):
                 for s in this.Bords[i][j].sommets:
-                    if not(s in this.Bords[i]):
+                    if not(s in this.Nodes_bords[i]):
                         this.Nodes_bords[i].append(s)
 
         return this.Nodes_bords
@@ -65,22 +62,24 @@ class Mesh:
     """
     calculates area of a line segment , 
     - id : id of segment to find it in segments arrays 
-    - quoi indicates the number of the bound, if quoi=1 id belongs to the bound_1
+    - idb indicates id of the bound
     """
-    def aire_seg(this, id, quoi):
-        if quoi == 1:
-            p1 = this.Nodes[this.Bord_1[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_1[id-1].sommets[1]- 1]
-        elif quoi==2:
-            p1 = this.Nodes[this.Bord_2[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_2[id-1].sommets[1]- 1]
-        elif quoi==3:
-            p1 = this.Nodes[this.Bord_3[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_3[id-1].sommets[1]- 1]
-            
-        elif quoi==4:
-            p1 = this.Nodes[this.Bord_4[id-1].sommets[0]- 1]
-            p2 = this.Nodes[this.Bord_4[id-1].sommets[1]- 1]
+    def aire_seg(this, id, idb):
+        p1 = this.Nodes[this.Bords[idb][id-1].sommets[0]- 1]
+        p2 = this.Nodes[this.Bords[idb][id-1].sommets[1]- 1]
+#        if quoi == 1:
+#            p1 = this.Nodes[this.Bord_1[id-1].sommets[0]- 1]
+#            p2 = this.Nodes[this.Bord_1[id-1].sommets[1]- 1]
+#        elif quoi==2:
+#            p1 = this.Nodes[this.Bord_2[id-1].sommets[0]- 1]
+#            p2 = this.Nodes[this.Bord_2[id-1].sommets[1]- 1]
+#        elif quoi==3:
+#            p1 = this.Nodes[this.Bord_3[id-1].sommets[0]- 1]
+#            p2 = this.Nodes[this.Bord_3[id-1].sommets[1]- 1]
+#            
+#        elif quoi==4:
+#            p1 = this.Nodes[this.Bord_4[id-1].sommets[0]- 1]
+#            p2 = this.Nodes[this.Bord_4[id-1].sommets[1]- 1]
 
         return (sqrt( (p1.x - p2.x)**2 + (p1.y - p2.y)**2 ))
 

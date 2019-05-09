@@ -46,9 +46,9 @@ class Mesh:
         for i in range(0,4):
             for j in range(0, this.Cnt_bord[i]):
                 for s in this.Bords[i][j].sommets:
-                    if not(s in this.Bords[i]):
+                    if not(s in this.Nodes_bords[i]):
                         this.Nodes_bords[i].append(s)
-
+        print("Nodes_bords",this.Nodes_bords)
         return this.Nodes_bords
 
 

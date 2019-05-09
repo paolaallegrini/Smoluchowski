@@ -11,54 +11,45 @@ from paraview import write_file,erase_files
 
 'Mesh creation from msh file'
 
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_holes.msh")
 erase_files()
 solve=FE_method(our_mesh)
 
 
 '''parameters'''
 dt=0.1
-NB=3
+NB=6
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 Tf=100
-Itf=3#int(Tf/dt) # Nb iterations
+Itf=int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 
 ''' Initial situation '''
 solve.maj_matrices()
-
+cl=0
 for it in range(Itf):
     #print("\n Iteration :",it)
 
     Uold=np.array(solve.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
     
-#    if((it%100==0)):
-#        '''Write solution in paraview format'''
-#        write_file(our_mesh,Uold[NB-1,:],int(it/100))
+    if((it%10==0)):
+        '''Write solution in paraview format'''
+        write_file(our_mesh,Uold[cl,:],int(it/10))
     
-    write_file(our_mesh,Uold[NB-1,:],int(it))
+#    write_file(our_mesh,Uold[NB-1,:],int(it))
     
     U=np.array(solve.vector_U())
-    Utot=[sum(col) for col in zip(*U)]
+#    Utot=[sum(col) for col in zip(*U)]
     
     solve.t+=solve.dt
-    #print('UM({})= {}\n'.format(it,sum(U[NB-1,:])))
-    UM.append(sum(U[NB-1,:]))
-#    if  our_mesh.equilibrium(np.array(U[0,:]),np.array(Uold[0,:]),prec=1e-11):
-#        print("U:\n",U[NB-1,:])
-#        print('---Equilibrium reached---- : Iteration {} and t={}\n'.format(it,our_mesh.t))
-##        break;
-#    for it in range(0,np.size(U[0,:])):
-#        print('Q_{}({})={},'.format(1,it,our_mesh.Q,))
+
+write_file(our_mesh,Uold[cl,:],int(Itf))
 
 
-#write_file(our_mesh,Uold[NB-1,:],int(NB))
-
-cl=NB-1
 print("Itf",Itf)
 for it in range(0,np.size(U[cl,:])):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
