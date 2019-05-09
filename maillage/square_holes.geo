@@ -1,5 +1,5 @@
 Mesh.MshFileVersion = 2.2;
-h = 0.005; //Taille caractéristique des éléménts, précision du maillage
+h = 0.1; //Taille caractéristique des éléménts, précision du maillage
 Point(1) = {0, 0, 0, h};   // Construction des points ext
 Point(2) = {1, 0, 0, h};
 Point(3) = {1, 1, 0, h};
@@ -149,10 +149,22 @@ Plane Surface(1) = {1,-2,-3,-4,-5,-6,-7,-8,-9,-10};//Définition d'une surface
 
 // Bord ext=1
 Physical Line("BordExt")={12,23,34,41};
-Physical Line("BordExt2")={12,23,34,41};
-Physical Line("BordExt3")={12,23,34,41};
 //Bord int = 2 ou 4
-Physical Line("Cercle4")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
+//Physical Line("Cercle4")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
+Physical Line("C11")={1,2,3,4}; //c
+Physical Line("C12")={5,6,7,8};
+Physical Line("C13")={9,10,11,122};
+
+Physical Line("C21")={13,14,15,16};
+Physical Line("C22")={17,18,19,20};
+Physical Line("C23")={21,22,233,24};
+
+Physical Line("C31")={25,26,27,28};
+Physical Line("C32")={29,30,31,32};
+Physical Line("C33")={33,344,35,36};
+
+
+
 
 
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage

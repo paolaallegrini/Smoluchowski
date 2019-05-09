@@ -220,7 +220,7 @@ class Mesh:
             for j in range(NB-1):
                 for k in range(NB-1):
                     if ((j+k)>=(NB-1)):
-                        Qgain[NB-1,id]=a[j,k]*U[j,id]*U[k,id]
+                        Qgain[NB-1,id]+=a[j,k]*U[j,id]*U[k,id]
         
         Q= 1/2.0*Qgain - Qloss
         return Q,Qloss
