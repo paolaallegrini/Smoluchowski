@@ -10,10 +10,7 @@ from matrices_FE_Q import FE_method
 from paraview import write_file,erase_files
 
 'Mesh creation from msh file'
-
-#our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_holes.msh")
 our_mesh = read_file("C:/Users/Studente/Documents/GitHub/Smoluchowski/maillage/square_holes.msh")
-
 erase_files()
 solve=FE_method(our_mesh)
 
@@ -44,7 +41,7 @@ for it in range(Itf):
     
 #    write_file(our_mesh,Uold[NB-1,:],int(it))
     
-    U=np.array(solve.vector_U())
+    U=np.array(solve.vector_U(method=1))
 #    Utot=[sum(col) for col in zip(*U)]
     
     solve.t+=solve.dt
