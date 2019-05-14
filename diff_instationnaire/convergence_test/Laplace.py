@@ -106,7 +106,7 @@ class FE_method :
         this.b=np.zeros(mesh.Ns)
 
         ' Condition dirichlet '
-        for id_s in mesh.Nodes_bords[0]: #bord Gauche
+        for id_s in mesh.Nodes_bords[0]: #Bord
             x=mesh.Nodes[id_s-1].x
             y=mesh.Nodes[id_s-1].y
             this.b[id_s-1] = this.U_D(x,y)

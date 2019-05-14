@@ -11,7 +11,7 @@ from base_FE2 import Mesh, Node, Element, Triangle, Segment
 import numpy as np
 
 def read_file(filename):
-    Nodes = np.empty((100000, 4), dtype = float)
+    Nodes = np.empty((500000, 4), dtype = float)
     MeshFormat = np.empty(3, dtype = int) #[None] * 3
     Number0fNodes = 0
     NumberOfTr = 0
