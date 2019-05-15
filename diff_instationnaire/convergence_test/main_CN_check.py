@@ -41,7 +41,7 @@ def vecteurX(Nodes):
 
 'Mesh creation from msh file'
 #our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/mesh_laplace.msh")
-our_mesh = read_file("D:/stage_labo/Smoluchowski/maillage/check/mesh_laplace128.msh")
+our_mesh = read_file("C:/Users/Studente/Documents/GitHub/Smoluchowski/maillage/mesh_laplace.msh")
 
 #erase_files()
 solve=FE_method(our_mesh)
@@ -49,10 +49,11 @@ solve=FE_method(our_mesh)
 
 '''parameters'''
 L=1
-h=L/(128)
+N=np.size(our_mesh.Nodes)
+h=L/(N)
 dt=h
 Tf=3
-Itf=4#int(Tf/dt) # Nb iterations
+Itf=5#int(Tf/dt) # Nb iterations
 #dt=dt/2
 #Itf=Itf*2
 coeff_d=1

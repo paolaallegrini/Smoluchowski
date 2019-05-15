@@ -9,7 +9,6 @@ from scipy.sparse import lil_matrix
 #from scipy.sparse.linalg import spsolve
 import numpy as np
 from math import floor, sqrt
-import copy
 
 
 class FE_method :

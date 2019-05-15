@@ -90,21 +90,31 @@ print(' P200 : ',np.around(P200,decimals=3))
 
 ###########################################################################
 "Laplace equation :L=10,  U(x,y)=x^3 - 3*x*y^2"
-
+print('\n\nLaplace equation')
 h=[8,16,32,64,128]
 #errlap=[181.25446246252406, 28.10973969757918, 3.509560464112835, 0.4433517756352217, 0.05779743518189447]
 #errlap=[7.059576397349336e-06, 1.661665589628848e-06, 2.2196698830262454e-07, 2.5917730260097832e-08, 3.596515498261788e-09]
-Plap=[]
+
 #for e in range(np.size(errlap)):
 #    errlap[e]=math.sqrt(errlap[e])
 
 'norm with nb points not h'
-errlap=[0.0007198152870784824, 0.0002673377783366428, 7.133069815846211e-05, 1.734108795654777e-05, 4.587560967875222e-06]
-    
-for e in range(np.size(errlap)-1):  
-    Plap.append(math.log(errlap[e]/errlap[e+1])/math.log(2))
-print('\n\nLaplace equation')
-print(' Plap=',np.around(Plap,decimals=3))
+#errlap=[0.0007198152870784824, 0.0002673377783366428, 7.133069815846211e-05, 1.734108795654777e-05, 4.587560967875222e-06]
+#Plap=[]
+#for e in range(np.size(errlap)-1):  
+#    Plap.append(math.log(errlap[e]/errlap[e+1])/math.log(2))
+#
+#print(' Plap=',np.around(Plap,decimals=3))   
+ 
+'norm with nb_points + refine by splitting'
+#init h=L/8
+nb_points=[109, 401, 1537, 6017, 23809]
+errlaps=[0.0007198152870784824, 0.00016331131421334417, 3.871115662252191e-05, 9.493260587346015e-06, 2.361658841613348e-06]
+Plaps=[]
+for e in range(np.size(errlaps)-1):  
+    Plaps.append(math.log(errlaps[e]/errlaps[e+1])/math.log(2))
+
+print(' Plaps=',np.around(Plaps,decimals=3))
 ###########################################################################
 
 """ Diffusion dirichlet
@@ -182,18 +192,31 @@ L=1000; h=L/120, Tf=1000, tinit=300
 
 """Convergence Cranck Nicholson
 test case freefem https://www.um.es/freefem/ff++/pmwiki.php?n=Main.CN
-L=1; h=L/120, Tf=1000, tinit=300
+L=1
 """
+print("\n\nCranck Nicholson freefem example")
 L=1
 dt=h=[L/8,L/16,L/32,L/64]
 e120=[0.18737218266263952, 0.056282406426592546, 0.019352862285172013, 0.0013000013541423997]
 
-# itf=4 et norme avec nb nodes 
-e120=[0.05282299912435081,0.025093708110922697,0.0021297766682536762,0.00024320760205849367, 9.7645052730728e-05]
-Pt=[math.log(e120[e]/e120[e+1])/math.log(2) for e in range(4)]
+#'Itf=4 et norme avec nb nodes'
+#e120=[0.05282299912435081,0.025093708110922697,0.0021297766682536762,0.00024320760205849367, 9.7645052730728e-05]
+#Pt=[math.log(e120[e]/e120[e+1])/math.log(2) for e in range(4)]
+#print(" Pt : ", np.around(Pt,decimals=3))
 
-print("\n\nCranck Nicholson freefem example")
-print(" Pt1 : ", np.around(Pt,decimals=3))
+'Itf=4 et norme avec nb nodes + refine by splitting'
+'dt=h'
+errcns=[0.05282299912435081, 0.02116337036247896, 0.0014237860840320958, 0.00040034064323629193]
+'dt=L/nb_points, Itf=5'
+errcns=[0.05553174190884084, 0.009878434261803404, 0.0016922196233404155, 0.00025751930055481427]
+PCNs1=[math.log(errcns[e]/errcns[e+1])/math.log(2) for e in range(np.size(errcns)-1)]
+print(" PCNs dt=h : ", np.around(PCNs1,decimals=3))
+
+'dt=h^2'
+errcns=[0.04648225501857391, 0.009676095501750316, 0.0016979349034482768, 0.0002680620602158897]
+PCNs2=[math.log(errcns[e]/errcns[e+1])/math.log(2) for e in range(np.size(errcns)-1)]
+print(" PCNs dt=h*h : ", np.around(PCNs2,decimals=3))
+
 
 
 #e1=[0.5631527342862813, 0.1392650950012512, 0.07922321976162881]

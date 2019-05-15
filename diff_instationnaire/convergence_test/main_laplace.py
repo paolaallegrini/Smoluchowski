@@ -30,7 +30,8 @@ def sol_exacte(x,y) :
     
 
 'Mesh creation from msh file'
-our_mesh = read_file("D:/stage_labo/Smoluchowski/maillage/mesh_laplace.msh")
+
+our_mesh = read_file("C:/Users/Studente/Documents/GitHub/Smoluchowski/maillage/mesh_laplace.msh")
 #erase_files()
 solve=FE_method(our_mesh)
 
