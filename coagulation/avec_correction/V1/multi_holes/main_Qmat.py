@@ -20,7 +20,7 @@ solve=FE_method(our_mesh)
 
 '''parameters'''
 dt=0.1
-NB=6
+NB=1
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)

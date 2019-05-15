@@ -17,12 +17,12 @@ solve=FE_method(our_mesh)
 
 '''parameters'''
 dt=0.1
-NB=6
+NB=2
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 Tf=100
-Itf=3#int(Tf/dt) # Nb iterations
+Itf=25#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 
@@ -50,10 +50,12 @@ write_file(our_mesh,Uold[cl,:],int(Itf))
 
 
 print("Itf",Itf)
-for it in range(0,np.size(U[cl,:])):
-#    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
-#    print('Uold({})={}'.format(it, solve.Uold[it]))
-    print('U_{}({})={}'.format(cl+1,it, U[cl,it]))
+#for it in range(0,np.size(U[cl,:])):
+##    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
+##    print('Uold({})={}'.format(it, solve.Uold[it]))
+#    print('U_{}({})={}'.format(cl+1,it, U[cl,it]))
+    
+print(solve.t)
 
 #'L2 error'
 ##X=vecteurX(our_mesh.Nodes)

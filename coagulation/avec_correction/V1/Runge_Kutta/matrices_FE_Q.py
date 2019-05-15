@@ -38,15 +38,7 @@ class FE_method :
         ' Condition t=0 '
         for m in range(NB):
             this.Uold[m,:]=this.U0[m]*np.ones(mesh.Ns)
-        
-#            ' Condition dirichlet '
-#            for id_s in this.Nodes_bords[1]:
-#                this.Uold[m,id_s-1] = 22
-#    
-#            for id_s in this.Nodes_bords[2]:
-#                this.Uold[m,id_s-1] = 2
-        #this.Uold[0,:]=25#this.U0[0]
-        
+                
         this.U = np.array(this.Uold) 
 
         return this.Uold, this.U
@@ -64,7 +56,7 @@ class FE_method :
     """
 
     def dtcalc(this,Qloss):
-        dt=dtemp=1
+        dt=dtemp=0.01
         U=this.Uold
         NB=this.NB
         
@@ -79,8 +71,8 @@ class FE_method :
                     
 #            print("dt, U[m], dt*Qloss :\n",dt,min(U[m,:]),max(dt*Qloss[m,:]))           
 #        print("dt= ",dt)
-        this.dt=0.1#dt
-        return this.dt
+        #this.dt=0.1#dt
+        return dt
     
     """ Coagulation term :
         - Matrix NB*Ns with all the U vectors 
@@ -143,7 +135,7 @@ class FE_method :
         if (stage==0):
             A = this.M + this.dt*this.coeff_d[m]*this.D
         else :
-            A = this.M - gamma*this.dt*this.coeff_d[m]*this.D
+            A = this.M + gamma*this.dt*this.coeff_d[m]*this.D
 
         A=A.tocsr()
         return A
@@ -245,12 +237,18 @@ class FE_method :
             gamma = 1 - sqrt(2)/2.0
             delta = 1 - 1/(2*sqrt(gamma))
             #U2=this.vector_U(stage=2)             #at this point this.U=U2
-            Q2=this.Qcalc(U2)[0]
+            Q2,Q2loss=this.Qcalc(U2)
+            dt2=this.dtcalc(Q2loss)
+            print("dt1 : {}, dt2 : {}".format(this.dt, dt2))
+
+            if (dt2<this.dt) :
+                print("dt1 : {}, dt2 : {}".format(this.dt, dt2))
+
             
             for m in range(NB): 
-                this.b[m,:]=np.dot(this.M.toarray(),U2[m,:] + delta*this.dt*Q[m,:] \
+                this.b[m,:]=np.dot(this.M.toarray(),this.Uold[m,:] + delta*this.dt*Q[m,:] \
                 + (1-delta)*this.dt*Q2[m,:]) \
-                + np.dot((1 - gamma)*this.dt*this.D.toarray(),U2[m,:])
+                - np.dot((1 - gamma)*this.dt*this.D.toarray(),U2[m,:])
                 
             
         'Condition neumann bord int fonction constante /uniquement pour U[0,:]=0.5' 
@@ -280,6 +278,7 @@ class FE_method :
         mesh=this.mesh
         Q,Qloss=this.Qcalc(this.Uold)
         this.dt=this.dtcalc(Qloss)
+        print('dt U',this.dt)
 
         if (method==0):
             this.Am=this.matrices_Am()  
@@ -317,7 +316,7 @@ class FE_method :
     Rounds down the number n with a certain nb of decimals 
     Used to round down the time step dt
 """
-def round_down(n, decimals=4):
+def round_down(n, decimals=10):
     multiplier = 10 ** decimals
     return floor(n * multiplier) / multiplier
     
