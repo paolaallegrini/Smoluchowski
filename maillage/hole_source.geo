@@ -1,5 +1,6 @@
-Mesh.MshFileVersion = 2.2;
-h = 50; //Taille caractéristique des éléménts, précision du maillage
+﻿Mesh.MshFileVersion = 2.2;
+h = 30; //taille caractéristique des éléménts, précision du maillage
+hc = 10;
 Point(1) = {0, 0, 0, h};   // Construction des points ext
 Point(2) = {100, 0, 0, h};
 Point(3) = {100, 100, 0, h};
@@ -26,10 +27,10 @@ Circle(4)={9,5,6};
 
 
 Line Loop(1) = {12,23,34,41};//Définition d'un pourtour (d'un bord)
-Line Loop(2) = {1,2,3,4}; //Bord cercle
+Curve Loop(2) = {1,2,3,4}; //Bord cercle
 
-Plane Surface(1) = {1,2};//Définition d'une surface
-Plane Surface(2) = {2};
+Plane Surface(1) = {1,-2};//Définition d'une surface
+//Plane Surface(2) = {2};
 Physical Line("Mur")={12,34};
 Physical Line("Gauche")={41};
 Physical Line("Droit")={23};
