@@ -67,3 +67,15 @@ theloops[0] = newreg;
 Line Loop(theloops[0]) = {12,23,34,41};
 Physical Line("BordExt") = theloops[0];
 Plane Surface(1) = {theloops[]};
+
+
+/*
+Field[1] = BoundaryLayer;
+Field[1].EdgesList = {5,6,7,8};
+Field[1].AnisoMax = 1.0;
+Field[1].hfar = h;
+Field[1].hwall_n = h2;
+Field[1].thickness = R2-Rh;
+//Field[1].IntersectMetrics = 0;
+BoundaryLayer Field = 1;
+*/
