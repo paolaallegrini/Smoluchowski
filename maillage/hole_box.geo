@@ -1,7 +1,15 @@
 Mesh.MshFileVersion = 2.2;
 L = 1;
 h=0.2;
-Mesh.CharacteristicLengthFromPoints=h;
+//Mesh.CharacteristicLengthFromPoints=h;
+Mesh.CharacteristicLengthFromPoints = 0;
+Mesh.CharacteristicLengthExtendFromBoundary = 1;
+Mesh.CharacteristicLengthFromCurvature = 0;
+Mesh.CharacteristicLengthMin = h/20;
+Mesh.CharacteristicLengthMax = h;
+
+
+
 Point(1) = {0, 0, 0};   // Construction des points ext
 Point(2) = {1, 0, 0};
 Point(3) = {1, 1, 0};
@@ -12,7 +20,7 @@ Line(23) = {2,3};
 Line(34) = {3,4};
 Line(41)={4,1};
 
-Rh=L/12;
+Rh=GetValue(" Hole's radius Rh :",1/12);
 xc=0.5;
 yc=0.5;
 Point(5)={xc,yc,0}; //centre
@@ -33,13 +41,17 @@ Physical Line("BordInt")={1,2,3,4};
 Plane Surface(1) = {1,-2};// Définition d'une surface
 Physical Surface("Carre")=1;
 
+R=0.25;
+If (R<Rh)
+    R=Rh + 0.05
+EndIf
 Field[1] = Box;
-Field[1].VIn = h/100;
+Field[1].VIn = h/8;
 Field[1].VOut = h;
-Field[1].XMax = -0.5;
-Field[1].XMin = 0.5;
-Field[1].YMax = -0.5;
-Field[1].YMin = 0.5;
+Field[1].XMax = 0.5 + R;
+Field[1].XMin = 0.5 - R;
+Field[1].YMax = 0.5 + R;
+Field[1].YMin = 0.5 - R;
 //Field[1].ZMax = 275;
 //Field[1].ZMin = 350;
 
