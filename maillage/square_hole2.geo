@@ -28,8 +28,10 @@ Circle(4)={9,5,6};
 
 Line Loop(1) = {12,23,34,41};//Définition d'un pourtour (d'un bord)
 Line Loop(2) = {1,2,3,4}; // Cercle intérieur
-
+Physical Line("BordExt")={12,23,34,41};
+Physical Line("BordInt")={1,2,3,4};
 Plane Surface(1) = {1,-2};// Définition d'une surface
+Physical Surface("Carre")=1;
 
 Field[1] = Box;
 Field[1].VIn = h/100;
@@ -104,4 +106,3 @@ Field[1].thickness = R2-Rh;
 BoundaryLayer Field = 1;
 */
 
-*/

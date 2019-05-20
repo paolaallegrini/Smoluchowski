@@ -1,7 +1,7 @@
 ﻿Mesh.MshFileVersion = 2.2;
 L=1;
-h = L/8; //Taille caractéristique des éléménts, précision du maillage
-hc = L/32;
+h = L/4; //Taille caractéristique des éléménts, précision du maillage
+hc = L/4;
 Point(1) = {0, 0, 0, h};   // Construction des points ext
 Point(2) = {1, 0, 0, h};
 Point(3) = {1, 1, 0, h};
@@ -147,24 +147,14 @@ Line Loop(9) = {29,30,31,32};
 Line Loop(10) = {33,344,35,36};
 
 
-//Plane Surface(1) = {1,-2,-3,-4,-5,-6,-7,-8,-9,-10};//Définition d'une surface
-//Plane Surface(1) = {1};//Définition d'une surface
-
-//For t In {2:10}
-
-  //  Plane Surface(t) ={t};
-//EndFor
-
-
-
 Plane Surface(1) = {1,2,3,4,5,6,7,8,9,10};//Définition d'une surface
 
 // Bord ext=1
 Physical Line("BordExt")={12,23,34,41};
 
 // Bords cercles
-Physical Line("Cercle4")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
-Physical Line("C11")=2;//{1,2,3,4}; 
+//Physical Line("Cercle4")={1,2,3,4,5,6,7,8,9,10,11,122,13,14,15,16,17,18,19,20,21,22,233,24,25,26,27,28,29,30,31,32,33,344,35,36};
+Physical Line("C11")={1,2,3,4}; 
 Physical Line("C12")={5,6,7,8};
 Physical Line("C13")={9,10,11,122};
 
@@ -177,6 +167,6 @@ Physical Line("C32")={29,30,31,32};
 Physical Line("C33")={33,344,35,36};
 
 
-//Physical Surface("Carre") = {2};  //A sauvegarder dans le fichier de maillage
+Physical Surface("Carre") = 1;  //A sauvegarder dans le fichier de maillage
 
 // ctrl shift s pour fichier maillage à lire avec python

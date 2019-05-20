@@ -37,7 +37,8 @@ for it in range(Itf):
 
     Uold=np.array(solve.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
-    
+    for it in range(0,np.size(U[cl,:])):
+        print('Uold{}({})={}'.format(cl+1,it, Uold[cl,it]))
     if((it%10==0)):
         '''Write solution in paraview format'''
         write_file(our_mesh,Uold[cl,:],int(it/10))

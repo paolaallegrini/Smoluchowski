@@ -41,7 +41,7 @@ for it in range(Itf):
     
 #    write_file(our_mesh,Uold[NB-1,:],int(it))
     
-    U=np.array(solve.vector_U(method=1))
+    U=np.array(solve.vector_U(method=0))
 #    Utot=[sum(col) for col in zip(*U)]
     
     solve.t+=solve.dt

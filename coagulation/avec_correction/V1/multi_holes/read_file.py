@@ -33,7 +33,7 @@ def read_file(filename):
                 line = content[i]
             
                 NumberOfBorders = (int)(content[i][0:-1].split(" ")[0]) -1
-                #print("Nb bords : {}".format(NumberOfBorders))
+                print("Nb bords : {}".format(NumberOfBorders))
                 NumberOfSeg = NumberOfBorders
                 Cnt_bord=[0]*NumberOfSeg
                 i += 1;
