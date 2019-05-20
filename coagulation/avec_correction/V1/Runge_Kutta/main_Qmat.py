@@ -5,12 +5,12 @@ Created on Tue May  7 14:52:45 2019
 @author: Home
 """
 import numpy as np 
-from read_file import read_file
+from read_file2 import read_file
 from matrices_FE_Q import FE_method
 from paraview import write_file,erase_files
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Studente/Documents/GitHub/Smoluchowski/maillage/square_holes.msh")
+our_mesh = read_file("C:/Users/Studente/Documents/GitHub/Smoluchowski/maillage/holes.msh")
 erase_files()
 solve=FE_method(our_mesh)
 

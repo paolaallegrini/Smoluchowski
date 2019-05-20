@@ -147,7 +147,7 @@ Line Loop(9) = {29,30,31,32};
 Line Loop(10) = {33,344,35,36};
 
 
-Plane Surface(1) = {1,2,3,4,5,6,7,8,9,10};//Définition d'une surface
+Plane Surface(1) = {1,-2,-3,-4,-5,-6,-7,-8,-9,-10};//Définition d'une surface
 
 // Bord ext=1
 Physical Line("BordExt")={12,23,34,41};

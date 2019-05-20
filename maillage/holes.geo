@@ -1,6 +1,6 @@
 Mesh.MshFileVersion = 2.2;
 L=1;
-h=L/2;
+h=L/4;
 hc = L/4;   //Taille caractéristique des éléménts, précision du maillage
 
 Point(1) = {0, 0, 0, h};   // Construction des points ext
@@ -11,8 +11,10 @@ Point(4) = {0, L, 0, h};
 Line(12) = {1,2};   // Carre ext
 Line(23) = {2,3};
 Line(34) = {3,4};
-Line(41)={4,1};
-
+Line(41) = {4,1};
+theloops[0] = newreg;
+Line Loop(theloops[0]) = {12,23,34,41};
+Physical Line("BordExt") = {12,23,34,41};//theloops[0];
 //Macro PhysName
 
     
@@ -33,6 +35,7 @@ Macro Holes
     Printf("Cercle tag %g :%g, %g, %g, %g",nbc,c1, c2, c3, c4);
     
     //Creation boundary layer
+    /*
     Field[nbc] = BoundaryLayer;
     Field[nbc].EdgesList = {c1,c2,c3,c4};
     Field[nbc].AnisoMax = 1.0;
@@ -41,18 +44,16 @@ Macro Holes
     Field[nbc].thickness = Rtot - Rh;
     Field[nbc].IntersectMetrics = 0;
     BoundaryLayer Field = nbc;
-    
+    */
     l1=newreg; Line Loop(l1)={c1,c2,c3,c4};
     theloops[nbc]=-l1;
-    Physical Line(nbc)=l1; //- theloops[nbc]; // Ctot =Max nb_holes
-
-    Printf("l1 %g , theloops[%g] = %g",l1, nbc,theloops[nbc]);
-    
+    Physical Line(nbc+1)={c1,c2,c3,c4}; //- theloops[nbc]; // Ctot =Max nb_holes
+    Printf("l1 %g , theloops[%g] = %g",l1, nbc,theloops[nbc]); 
 Return
 
 Ctot = 9;
 nbc = 1;
-xc = -0.1; yc = -0.1; Rh = 0.1; Rtot=0.15;
+xc = -0.1; yc = -0.1; Rh = 0.05; Rtot=0.15;
 
 For idx In {1:3}
     xc += 0.3;
@@ -66,10 +67,7 @@ For idx In {1:3}
 
 EndFor
  
- //Exterior border
-theloops[0] = newreg;
-Line Loop(theloops[0]) = {12,23,34,41};
-Physical Line("BordExt") = theloops[0];
+//Physical Lines, names by hand for circles
 Plane Surface(1) = {theloops[]};
 Physical Surface("Carre")=1;
 
