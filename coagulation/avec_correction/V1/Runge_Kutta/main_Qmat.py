@@ -22,7 +22,7 @@ coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 Tf=100
-Itf=25#int(Tf/dt) # Nb iterations
+Itf=4#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 

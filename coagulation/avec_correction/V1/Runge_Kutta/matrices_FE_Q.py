@@ -55,11 +55,11 @@ class FE_method :
     """
 
     def dtcalc(this,Qloss):
-        dt=dtemp=0.01
+        dt=dtemp=0.1
         U=this.Uold
         NB=this.NB
         
-        for m in range(NB):       
+        for m in range(NB-1):       
             if np.all(Qloss[m,:]!=0):
                 dtemp=min(U[m,:]/Qloss[m,:] )           
                 if (dtemp < dt):
@@ -71,6 +71,47 @@ class FE_method :
 #            print("dt, U[m], dt*Qloss :\n",dt,min(U[m,:]),max(dt*Qloss[m,:]))           
 #        print("dt= ",dt)
         #this.dt=0.1#dt
+        return dt
+    
+    def dtcalc2(this,U,stage=0,U2=None):
+        dt=0.1
+        #U=this.Uold
+        NB=this.NB
+        Ns=this.mesh.Ns
+        
+        ' Coagulation coefficient (matrix) : a_ij=alpha/(i*j) '
+        alpha = 10.0
+        a = np.array([[alpha/i*j for i in range(1,NB+1)] for j in range(1,NB+1)])
+        if (stage == 0) :
+            for m in range(NB-1):       
+                for id in range(Ns):
+                    if ( U[m,id] > 0 ):
+                        som = np.dot(U[:,id],a[m,:]) #som = sum(U[:,i]*a[m,:])
+                        
+                        if ( dt*som >= 1 ):
+                            dt = round_down(1/som)
+        if (stage == 2) :
+            dt = this.dt #could be old dt3
+            gamma= 1 - sqrt(2)/2
+
+            for m in range(NB-1):       
+                for id in range(Ns):
+                    if (U[m,id]>0):
+                        som = np.dot(U[:,id],a[m,:]) #som = sum(U[:,i]*a[m,:])
+                        if ( gamma*dt*som >= 1 ):
+                            dt = round_down(1/som)
+                            
+        if (stage == 3) :
+            gamma = 1 - sqrt(2)/2.0
+            delta = 1 - 1/(2*sqrt(gamma))
+            
+            for m in range(NB-1):
+                for id in range(Ns):
+                    if (U2[m,id]>0):
+                        som = np.dot(U2[:,id],a[m,:]) #som = sum(U[:,i]*a[m,:])
+                        if ( (1-delta)*dt*som >= 1 ):
+                            dt = round_down(1/som)
+                            
         return dt
     
     """ Coagulation term :
@@ -93,11 +134,10 @@ class FE_method :
         for m in range(NB-1) : #no Qloss for m=NB-1
             #Qloss
             for id in range(mesh.Ns):
-                Qloss[m,id]=np.dot(U[:,id],a[m,:])
-                
-                    
-            Qloss[m,:]=Qloss[m,:]*U[m,:]
+                Qloss[m,id]=np.dot(U[:,id],a[m,:])                
             
+            Qloss[m,:]=Qloss[m,:]*U[m,:]
+
             ' Qgain for clusters 1 ... NB-2 '
             if (m!=0) : #no Qgain for m=0 
                 for id in range(mesh.Ns):
@@ -212,7 +252,7 @@ class FE_method :
         
         stage=0 -> no runge kutta M*(Uold + dt*Q) + Neumann cond
         stage=2 -> M*(Uold + dt*gamma*Q(Uold)) 
-        stage=3 -> M*(U2 +  dt*delta*Q(Uold) +  dt*(1-delta)*Q(U2)) + (1-gamma)*dt*coeff_d*D*U2
+        stage=3 -> M*(U2 +  dt*delta*Q(Uold) +  dt*(1-delta)*Q(U2)) - (1-gamma)*dt*coeff_d*D*U2
         
         Returns : Matrix NB*Ns
     """
@@ -276,25 +316,37 @@ class FE_method :
         
         mesh=this.mesh
         Q,Qloss=this.Qcalc(this.Uold)
-        this.dt=this.dtcalc(Qloss)
-        print('dt U',this.dt)
 
         if (method==0):
+            this.dt=this.dtcalc(Qloss)
             this.Am=this.matrices_Am()  
             b=this.vector_b(Q)
         
         else :
             stage=2
-            U2=np.zeros([this.NB,mesh.Ns])
-            this.Am=this.matrices_Am(stage=stage)  
-            b=this.vector_b(Q,stage)
-            for m in range(this.NB):
-                U2[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
+            this.dt = 0
+            dt3 = -1 #to enter in the while 
+            while (dt3 < this.dt) :
+                this.dt = this.dtcalc2(this.Uold,stage=2)
+                
+                'Calculating U2 with curent dt'
+                U2=np.zeros([this.NB,mesh.Ns])
+                this.Am=this.matrices_Am(stage=stage)
+                b=this.vector_b(Q,stage)
+                
+                for m in range(this.NB):
+                    U2[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
+                
+                'Calculate dt for stage = 3 ; if < dt2 -> calculate U2 with smaller dt2'
+                dt3 = this.dtcalc2(this.Uold,stage=3,U2=U2)
+                
             
-            stage=3
+            'Calculating b for stage = 3'
+            stage = 3
             this.Am=this.matrices_Am(stage=stage)  
             b=this.vector_b(Q,stage=stage,U2=U2)
-            
+        
+        'Calculating U^n+1'
         for m in range(this.NB):
             this.U[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
             
