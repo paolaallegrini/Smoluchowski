@@ -21,7 +21,7 @@ NB=2
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
-Tf=100
+Tf=0.7
 Itf=4#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
@@ -29,33 +29,38 @@ Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 ''' Initial situation '''
 solve.maj_matrices()
 cl=0
-for it in range(Itf):
+it = 0
+while (solve.t < Tf) :
     #print("\n Iteration :",it)
 
     Uold=np.array(solve.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
     
+    '''Write solution in paraview format'''
     if((it%10==0)):
-        '''Write solution in paraview format'''
         write_file(our_mesh,Uold[cl,:],int(it/10))
-    
-#    write_file(our_mesh,Uold[NB-1,:],int(it))
-    
+        
     U=np.array(solve.vector_U(method=0))
+    print('----------It {} dt = {}--------'.format(it,solve.dt))
+    print('U_{}({}) = {}'.format(cl+1,0, U[cl,0]))
+    print ("min U", U.min())
+
+
 #    Utot=[sum(col) for col in zip(*U)]
     
     solve.t+=solve.dt
+    it += 1
 
 write_file(our_mesh,Uold[cl,:],int(Itf))
 
 
-print("Itf",Itf)
+print("Itf",it)
 #for it in range(0,np.size(U[cl,:])):
 ##    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 ##    print('Uold({})={}'.format(it, solve.Uold[it]))
 #    print('U_{}({})={}'.format(cl+1,it, U[cl,it]))
     
-print(solve.t)
+print('Tf',solve.t)
 
 #'L2 error'
 ##X=vecteurX(our_mesh.Nodes)
