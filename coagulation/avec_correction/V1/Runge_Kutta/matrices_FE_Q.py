@@ -12,6 +12,7 @@ from math import floor, sqrt
 
 
 class FE_method :
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     def __init__(this,mesh):
         this.mesh=mesh
         
@@ -42,6 +43,7 @@ class FE_method :
 
         return this.Uold, this.U
     
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """ Find equilibrum , steady state
     """
     def equilibrium(this,U,Uold,prec=1e-010):
@@ -49,7 +51,8 @@ class FE_method :
         if norm<=prec:
             return True
         return False
-
+    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """ Calculates time step : 
         condition dt < U/Qloss
     """
@@ -67,11 +70,18 @@ class FE_method :
                     dt = round_down(dtemp)
                     
         return dt
+    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """ dt calc for stage = 3
         dt < min_{m,id} (U1 / delta*Qloss1[m,id] + (1-delta)*Qloss2[m,id])
         
     """
     def dtcalc3(this,Qloss1,Qloss2,dtmax = 0.2):
+#    """
+#    Variante avec Q au lieu de Qloss 
+#    """
+#    def dtcalc3(this,Q1,Q2,dtmax = 0.2):
+
         dt = dtemp = dtmax
         U1 = this.Uold
         NB = this.NB
@@ -80,23 +90,24 @@ class FE_method :
 
         gamma = 1 - sqrt(2)/2.0
         delta = 1 - 1/(2*sqrt(gamma))
-
+        print("In calc dt3")
         for m in range(NB-1) :
             for id in range(Ns) :
-                if (U1[m,id]>0) :
+                if (U1[m,id]>0) : 
+                    #"IN U1 if"
                     denom = delta*Qloss1[m,id] + (1-delta)*Qloss2[m,id]
-                    
+#                    denom = delta*Q1[m,id] + (1-delta)*Q2[m,id]
+
                     if (denom > 0) :
                         dtemp = U1[m,id]/denom
-
                         if (dtemp < dt) :
                             dt = round_down(dtemp) 
                             bool = True
                             print("in")
         return dt,bool
-    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     def dtcalc2(this,U,stage=0,U2=None,dtmax = 0.2 ):
-        dt = 0.05#dtmax
+        dt = dtmax
         NB = this.NB
         Ns = this.mesh.Ns
         ' Coagulation coefficient (matrix) : a_ij=alpha/(i*j) '
@@ -111,6 +122,7 @@ class FE_method :
                         
                         if ( dt*som >= 1 ):
                             dt = round_down(1/som)
+                            
         if (stage == 2) :
             gamma = 1 - sqrt(2)/2
             dt = dtmax   # dt2 = gamma*dt < dt3 or dtmax
@@ -122,21 +134,9 @@ class FE_method :
                         
                         if ( gamma*dt*som >= 1 ):
                             print("IN 2 ")
-                            dt = round_down( 1/som )
-                            
-        if (stage == 3) :
-            gamma = 1 - sqrt(2)/2.0
-            delta = 1 - 1/(2*sqrt(gamma))
-            dt = dtmax / (1 - delta)    # dt3 = (1-delta)*dt < dtmax
-            for m in range(NB-1):
-                for id in range(Ns):
-                    if (U2[m,id]>0):
-                        som = np.dot(U2[:,id],a[m,:])
-                        
-                        if ( (1-delta)*dt*som >= 1 ):
-                            dt = round_down( 1/som )  
+                            dt = round_down( 1 / (gamma*som))
         return dt
-    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """ Coagulation term :
         - Matrix NB*Ns with all the U vectors 
         
@@ -182,7 +182,7 @@ class FE_method :
         Q= 1/2.0*Qgain - Qloss
         
         return Q,Qloss
-
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """
     Matrix A's calculation of cluster m : 
         stage=0 -> no runge kutta M+ dt*coeff*D
@@ -210,7 +210,7 @@ class FE_method :
             this.Am.append(this.matrice_A(m,stage=stage))
         return this.Am
     
-    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """
     Mass matrix :   
         - form : int2d_Omega phi_I*phi_J
@@ -237,7 +237,7 @@ class FE_method :
                         
         this.M = this.M.tocsr() 
         return this.M
-
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """
     Rigidity matrix :
             - coeff_d(m) : diffusion coeff of cluster m
@@ -260,13 +260,13 @@ class FE_method :
                     this.D[I-1,J-1] += mesh.aire_element(p+1) * np.dot( np.transpose(mesh.grad_phi_ref[j]) ,np.dot(bTb, mesh.grad_phi_ref[i]))
         this.D=this.D.tocsr()
         return this.D
-    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """
     func psi different for each neuron
     """
     def func_psi(this,idb):
         return idb+1/this.mesh.NbBords
-        
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"   
     """
     Vector b  :
         b = int2d_Omega (Uold*v) + dt*int2d_Omega (Q(Uold)*v) + Neumann cond
@@ -316,11 +316,16 @@ class FE_method :
                 
 #                this.b[0,p1-1]+=(taille/2)*this.dt*this.func_psi(idb)
 #                this.b[0,p2-1]+=(taille/2)*this.dt*this.func_psi(idb)
-                this.b[0,p1-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
-                this.b[0,p2-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
+                if (stage == 2):
+                    this.b[0,p1-1]+=(taille/2)*this.dt*gamma*0.5#this.func_psi(idb)
+                    this.b[0,p2-1]+=(taille/2)*this.dt*gamma*0.5#this.func_psi(idb)
+                else:
+                    this.b[0,p1-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
+                    this.b[0,p2-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
+
         
         return this.b
-    
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"
     """ Vector U :
         Solves system of the form AU=b to find U
         stage=0 -> no runge kutta 
@@ -329,28 +334,23 @@ class FE_method :
     """
     
     def vector_U(this,method=0):
-        
-        gamma = 1 - sqrt(2)/2.0
-        delta = 1 - 1/(2*sqrt(gamma))
+
         mesh=this.mesh
         Q,Qloss=this.Qcalc(this.Uold)
 
-        if (method==0):
-            this.dt = 0.05#this.dtcalc(Qloss)
+        if ((method==0) or (this.t ==0)):
+            this.dt = this.dtcalc(Qloss)
             this.Am=this.matrices_Am()  
             b=this.vector_b(Q)
         
         else :
             stage = 2
             dtmax = 0.2
-            i = 1
+#            i = 1
             while True : #do while
-                print("I = ",i)
                 # dt2
                 this.dt = this.dtcalc2(this.Uold,stage=2,dtmax = dtmax)
-                
-                print("dt2 = ",this.dt)
-                
+
                 'Calculating U2 with curent dt'
                 U2=np.zeros([this.NB,mesh.Ns])
                 this.Am=this.matrices_Am(stage=stage)
@@ -359,22 +359,25 @@ class FE_method :
                 for m in range(this.NB):
                     U2[m,:] = np.linalg.solve(this.Am[m].toarray(),b[m,:])
                 
-                'Calculate dt for stage = 3 ; if < dt2 -> calculate U2 with smaller dt2'# HOW SMALLER ??????? 
+                'Calculate dt for stage = 3'
                 Qloss2 = this.Qcalc(U2)[1]
-                dt3, bool = this.dtcalc3(Qloss,Qloss2,dtmax = this.dt)
+#                Q2 = this.Qcalc(U2)[0]
 
+                dt3, bool = this.dtcalc3(Qloss,Qloss2,dtmax = this.dt)
+#                dt3, bool = this.dtcalc3(Q,Q2,dtmax = this.dt)
+                
+                'if < dt2 -> calculate U2 with smaller dt2'# HOW SMALLER ???????
                 if bool :  #value changed
-                    print("dt3 = ",dt3)
-                    dtmax = this.dt/2 #  or dtmax = dt3
-                    i+=1
+                    dtmax = this.dt*0.8 #  0.8 ????
                 else : 
                     print('-----Stop-----')
-                    #this.dt = dt2
+                    print("dt stage 2 :", this.dt)
                     break;
 
             
             'Calculating b for stage = 3'
             stage = 3
+            print("dt stage 3 :",this.dt)
             this.Am=this.matrices_Am(stage=stage)  
             b=this.vector_b(Q,stage=stage,U2=U2)
         
@@ -385,7 +388,7 @@ class FE_method :
         this.Uold=np.array(this.U)
             
         return this.U
-        
+    "------------------------------------------------------------------------------------------------------------------------------------------------------"    
     """ Creates the matrices M=mass, D=rigidity, A= M + dt*D
     """
     
@@ -394,7 +397,7 @@ class FE_method :
         this.matrice_rigidite()
         this.matrices_Am()
         return
-    
+"------------------------------------------------------------------------------------------------------------------------------------------------------"    
 """
     Rounds down the number n with a certain nb of decimals 
     Used to round down the time step dt
@@ -402,4 +405,18 @@ class FE_method :
 def round_down(n, decimals=4):
     multiplier = 10 ** decimals
     return floor(n * multiplier) / multiplier
+
+
+################### Archives ##################################
+#        if (stage == 3) :
+#            gamma = 1 - sqrt(2)/2.0
+#            delta = 1 - 1/(2*sqrt(gamma))
+#            dt = dtmax / (1 - delta)    # dt3 = (1-delta)*dt < dtmax
+#            for m in range(NB-1):
+#                for id in range(Ns):
+#                    if (U2[m,id]>0):
+#                        som = np.dot(U2[:,id],a[m,:])
+#                        
+#                        if ( (1-delta)*dt*som >= 1 ):
+#                            dt = round_down( 1/som ) 
     

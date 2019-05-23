@@ -30,37 +30,34 @@ Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 solve.maj_matrices()
 cl=0
 it = 0
+Ufin = []
 while (solve.t < Tf) :
     #print("\n Iteration :",it)
 
     Uold=np.array(solve.Uold)
-    Utot_old=[sum(col) for col in zip(*Uold)]
     
-    '''Write solution in paraview format'''
-    if((it%10==0)):
-        write_file(our_mesh,Uold[cl,:],int(it/10))
-        
-    U=np.array(solve.vector_U(method=0))
-    print('----------It {} dt = {}--------'.format(it,solve.dt))
-    print('U_{}({}) = {}'.format(cl+1,0, U[cl,0]))
-    print ("min U", U.min())
+#    '''Write solution in paraview format'''
+#    if((it%10==0)):
+#        write_file(our_mesh,Uold[cl,:],int(it/10))
+#        
+    U=np.array(solve.vector_U(method=1))
+    print('----------It {} dt = {:.3f}--------'.format(it,solve.dt))
+    print('U_{}({}) = {:.4f}'.format(cl+1,0, U[cl,0]))
+    Ufin.append(U[cl,0])
+    print ("min value in U :{:.4f}".format(U.min()))
 
 
 #    Utot=[sum(col) for col in zip(*U)]
-    
     solve.t+=solve.dt
     it += 1
 
-write_file(our_mesh,Uold[cl,:],int(Itf))
+#write_file(our_mesh,Uold[cl,:],int(Itf))
 
-
-print("Itf",it)
+print("Itf : {} Tf :{:.3f}".format(it,solve.t))
 #for it in range(0,np.size(U[cl,:])):
 ##    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 ##    print('Uold({})={}'.format(it, solve.Uold[it]))
 #    print('U_{}({})={}'.format(cl+1,it, U[cl,it]))
-    
-print('Tf',solve.t)
 
 #'L2 error'
 ##X=vecteurX(our_mesh.Nodes)
