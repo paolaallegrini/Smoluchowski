@@ -12,13 +12,15 @@ from paraview import write_file,erase_files
 'Mesh creation from msh file'
 
 our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_holes.msh")
+
 erase_files()
 solve=FE_method(our_mesh)
 
 
 '''parameters'''
 dt=0.1
-NB=6
+
+NB=1
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
@@ -35,7 +37,8 @@ for it in range(Itf):
 
     Uold=np.array(solve.Uold)
     Utot_old=[sum(col) for col in zip(*Uold)]
-    
+    for it in range(0,np.size(U[cl,:])):
+        print('Uold{}({})={}'.format(cl+1,it, Uold[cl,it]))
     if((it%10==0)):
         '''Write solution in paraview format'''
         write_file(our_mesh,Uold[cl,:],int(it/10))

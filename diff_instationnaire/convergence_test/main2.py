@@ -41,7 +41,8 @@ def vecteurX(Nodes):
     return np.array(X),np.array(Y)
 
 'Mesh creation from msh file'
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/mesh_laplace.msh")
+#our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/mesh_laplace.msh")
+our_mesh = read_file("D:/stage_labo/Smoluchowski/maillage/mesh_laplace.msh")
 #erase_files()
 solve=FE_method(our_mesh)
 
@@ -63,7 +64,7 @@ solve.init_cond(coeff_d,dt,U0)
 #solve.t=t
 solve.maj_matrices()
 #print(solve.vector_b())
-write_file(our_mesh,solve.Uold,"init")
+#write_file(our_mesh,solve.Uold,"init")
 
 ''' Time loop '''
 for it in range(Itf):
@@ -80,23 +81,25 @@ for it in range(Itf):
 #        break;
 #
 #'''Write Final in paraview format'''
-write_file(our_mesh,solve.U,"Fin")
+#write_file(our_mesh,solve.U,"Fin")
 #
 Uexact=sol_exacte(X,Y,solve.t)
 
 '''Print Uold'''
-for it in range(0,np.size(solve.Uold)):
+#for it in range(0,np.size(solve.Uold)):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 #    print('Uold({})={}'.format(it, solve.Uold[it]))
     #print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],Uexact[it]))
-    print('b({})={}'.format(it,solve.b[it]))
+#    print('b({})={}'.format(it,solve.b[it]))
 
 'L2 error'
-h=L/(8)
+#h=L/(8)
+h=np.size(our_mesh.Nodes)
+print(h)
 #X=vecteurX(our_mesh.Nodes)
 #Uexact=sol_exacte(X,solve.t,coeff_d)
 Uexact=sol_exacte(X,Y,solve.t)
-err=sqrt(sum((U-Uexact)**2)*h)
+err=sqrt(sum((U-Uexact)**2)/h)
 print("Error =",err)
 
 

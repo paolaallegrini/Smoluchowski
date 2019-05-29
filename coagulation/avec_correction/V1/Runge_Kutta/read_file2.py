@@ -1,24 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Mar  7 10:01:43 2019
+Created on Mon May 20 14:01:11 2019
 
-@author: Home
+@author: Studente
 """
+
 """
 Reading a gmsh file and filling a mesh object
 """
-from base_FE2 import Mesh, Node, Element, Triangle, Segment
+from base_FE_Q import Mesh, Node, Element, Triangle, Segment
 import numpy as np
 
 def read_file(filename):
-    Nodes = np.empty((500000, 4), dtype = float)
-    MeshFormat = np.empty(3, dtype = int) #[None] * 3
+    Nodes = np.empty((100000, 4), dtype = float)
     Number0fNodes = 0
     NumberOfTr = 0
     NumberOfSeg = 0
     Number0fElems = 0
-    #NumberOfBorders =0
-    cnt_1 = cnt_2 = cnt_3 = 0 # compteurs seg dans chaque Bord
+    NumberOfBorders =0
+    Cnt_bord=0
     
     with open(filename) as f:
         content = f.readlines()
@@ -29,19 +29,15 @@ def read_file(filename):
         if line[0] == '$': # reading a property
             
             property = line[1:-1]
-            if property == "MeshFormat":
-                i+= 1
-                line = content[i][0:-1]
-
-                formats = np.asarray( line.split(" ") );
-                MeshFormat = formats # check if it works 
-            elif property =="PhysicalNames":
-                i+=1
+            if property =="EndPhysicalNames":
+                #i+=1
                 line = content[i]
-            
-                NumberOfBorders = (int)(content[i][0:-1].split(" ")[0]) -1
-                #print("nb bords : {}".format(NumberOfBorders))
-
+                
+                #nb_borders = num tag Carre - 1
+                NumberOfBorders = (int)(content[i-1][0:-1].split(" ")[1]) -1
+                print("Nb bords : {}".format(NumberOfBorders))
+                NumberOfSeg = NumberOfBorders
+                Cnt_bord=[0]*NumberOfSeg
                 i += 1;
 
             elif property == "Nodes":
@@ -79,19 +75,14 @@ def read_file(filename):
                         
                     elif type == 1:
                         vertice_n = 2;
-                        NumberOfSeg +=1
 
                     Elems.append(np.asarray([content[j][0:-1].split(" ")[1: ( vertice_n +bntg + 3)]]))  #[cnt] = np.asarray([content[j][0:-1].split(" ")[1:(vertice_n * 2 + 2)]])
-
-                    if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '1':
-                        cnt_1 += 1
-                        
-                    if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '2':
-                        cnt_2 += 1
-                        
-                    if Elems[-1][0][0] == '1' and Elems[-1][0][2] == '3':
-                        cnt_3 += 1
-
+                    
+                    for c in range(NumberOfSeg) :
+                        if Elems[-1][0][0] == '1' and Elems[-1][0][2] == str(c+1):
+#                        cnt_1 += 1
+                            Cnt_bord[c] +=1
+                            break
                     cnt = cnt +1
             else:
                 a = 2
@@ -100,17 +91,14 @@ def read_file(filename):
     Elems_ = np.empty(Number0fElems, dtype = Element)
     Trs_ = np.empty(NumberOfTr, dtype = Triangle)
     
-
-    segs_1 = np.empty(cnt_1, dtype = Segment)
-    segs_2 = np.empty(cnt_2, dtype = Segment)
-    segs_3 = np.empty(cnt_3, dtype = Segment)
+    Segs=[np.empty(Cnt_bord[c], dtype = Segment) for c in range(NumberOfSeg)]
 
     cnt = 0
     for i in range(0, Number0fNodes):
         Nodes_[ i ] = Node(i,Nodes[i][1], Nodes[i][2], Nodes[i][3])
 
 
-    ide_1 = ide_2 = ide_3 = 0
+    ide=[0]*(NumberOfSeg)
     cntT = 0
     for i in range(0, Number0fElems):
 
@@ -128,19 +116,10 @@ def read_file(filename):
 
 
         elif Elems_i[0] == 1:
-
-            if int(Elems_i[2]) == 1: #Mur ou Ext 
-                segs_1[ide_1] = Segment(i, Elems_i[2+nbTag:]) #seg_s;
-                ide_1 += 1
-                
-            elif Elems_i[2] == 2: # Interieur ou Gauche
-                segs_2[ide_2] = Segment(i, Elems_i[2+nbTag:])#seg_s
-                ide_2 +=  1
-            elif Elems_i[2] == 3: # Droite
-                segs_3[ide_3] = Segment(i, Elems_i[2+nbTag:])#seg_s
-                ide_3 +=  1
-                
-    Segs=[segs_1,segs_2,segs_3]
-    Cnt_bord=[cnt_1,cnt_2,cnt_3]
+            for c in range(NumberOfSeg) :
+                if int(Elems_i[2]) == (c+1): #bord_ext
+                    Segs[c][ide[c]] = Segment(i, Elems_i[2+nbTag:]) #seg_s;
+                    ide[c] += 1                            
+                    break
     princeMesh = Mesh(Number0fNodes, Nodes_, NumberOfTr , Trs_,Segs,Cnt_bord) #def __init__(this, Format_, Ns,Nodes , Nt, Triangles):
     return princeMesh

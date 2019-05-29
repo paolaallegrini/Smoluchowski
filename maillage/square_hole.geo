@@ -1,23 +1,25 @@
 Mesh.MshFileVersion = 2.2;
-h = 0.5; //Taille caractéristique des éléménts, précision du maillage
-Point(1) = {0, 0, 0, h};   // Construction des points ext
-Point(2) = {1, 0, 0, h};
-Point(3) = {1, 1, 0, h};
-Point(4) = {0, 1, 0, h};
+L = 1;
+//h = L/16; //Taille caractéristique des éléménts, précision du maillage
+hc = L/8;//L/32; // Taille caractéristique du cercle
+Point(1) = {0, 0, 0, hc};   // Construction des points ext
+Point(2) = {1, 0, 0, hc};
+Point(3) = {1, 1, 0, hc};
+Point(4) = {0, 1, 0, hc};
 
 Line(12) = {1,2};   //Carre ext
 Line(23) = {2,3};
 Line(34) = {3,4};
 Line(41)={4,1};
 
-Rh=0.25;
+Rh=L/8;
 xc=0.5;
 yc=0.5;
-Point(5)={xc,yc,0,h}; //centre
-Point(6)={xc,yc+Rh,0,h}; //up
-Point(7)={xc-Rh,yc,0,h}; //left
-Point(8)={xc,yc-Rh,0,h}; //down
-Point(9)={xc+Rh,yc,0,h}; //right
+Point(5)={xc,yc,0,hc}; //centre
+Point(6)={xc,yc+Rh,0,hc}; //up
+Point(7)={xc-Rh,yc,0,hc}; //left
+Point(8)={xc,yc-Rh,0,hc}; //down
+Point(9)={xc+Rh,yc,0,hc}; //right
 
 Circle(1)={6,5,7};
 Circle(2)={7,5,8};
@@ -34,3 +36,12 @@ Physical Line("BordInt")={1,2,3,4};
 Physical Surface("Carre") = {1};  //A sauvegarder dans le fichier de maillage
 
 // ctrl shift s pour fichier maillage à lire avec python
+
+Field[1] = BoundaryLayer;
+Field[1].EdgesList = {1,2,3,4};
+Field[1].AnisoMax = 1.0;
+Field[1].hfar = hc;
+Field[1].hwall_n = hc/8;
+Field[1].thickness = 0.1;
+Field[1].IntersectMetrics = 0;
+BoundaryLayer Field = 1;

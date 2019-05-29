@@ -232,9 +232,13 @@ class FE_method :
                 
                 p1=mesh.Bords[idb][p].sommets[0]
                 p2=mesh.Bords[idb][p].sommets[1]
-                
+
+               
                 this.b[0,p1-1]+=(taille/2)*this.dt*this.func_psi(idb)
                 this.b[0,p2-1]+=(taille/2)*this.dt*this.func_psi(idb)
+#                this.b[0,p1-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
+#                this.b[0,p2-1]+=(taille/2)*this.dt*0.5#this.func_psi(idb)
+
         
         return this.b
     
