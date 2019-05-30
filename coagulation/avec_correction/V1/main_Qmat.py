@@ -11,7 +11,7 @@ from paraview import write_file,erase_files
 
 'Mesh creation from msh file'
 
-our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh")
+our_mesh = read_file("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_hole.msh")
 erase_files()
 solve=FE_method(our_mesh)
 
@@ -21,9 +21,11 @@ dt=0.1
 NB=3
 coeff_d=[ 1.0/(i**(1./3.)) for i in range(1,NB+1)]
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
+print(coeff_d)
+#coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 Tf=100
-Itf=3#int(Tf/dt) # Nb iterations
+Itf=10#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 
@@ -58,13 +60,13 @@ for it in range(Itf):
 
 #write_file(our_mesh,Uold[NB-1,:],int(NB))
 
-cl=NB-1
+cl=1
 print("Itf",Itf)
 for it in range(0,np.size(U[cl,:])):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 #    print('Uold({})={}'.format(it, solve.Uold[it]))
-    print('U_{}({})={}'.format(cl+1,it, U[cl,it]))
-
+    print('U_{}({})={:.6f}'.format(cl+1,it, U[cl,it]))
+    
 #'L2 error'
 ##X=vecteurX(our_mesh.Nodes)
 ##Uexact=sol_exacte(X,solve.t,coeff_d)

@@ -1,6 +1,6 @@
 /* Variables générales*/
 load "gmsh";
-mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_4_borders_hole.msh");
+mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_hole.msh");
 plot(th, wait= true, cmm = "Mon superbe maillage");
 
 
@@ -13,14 +13,21 @@ func Q3= u1old*u2old + u2old*u1old;
 Vh Q11=Q1,Q22=Q2,Q33=Q3;
 */
 
+
 //Parameters
-int it=0;
+/*int it=0;
 real dt=0.06;
 real coeffd=0.1;
 real psi=0.5;
 real t=0;// initial time
 real tf=3;// final time 
 real Itf=5;//tf/dt; //nb iterations
+*/
+//Parameters
+int NB=3, m=0;
+real dt=0.1, t=0, Tf=4;
+real coeffd=0.1, psi=0.5;
+real Itf =5;
 
 u1old=0.0;
 u2old=0.0;
@@ -34,7 +41,7 @@ int2d(th) (+dt*coeffd*dx(u1)*dx(vh)+ dt*coeffd*dy(u1)*dy(vh))
 + int2d(th,qft=qf1pTlump)(u1*vh)
 - int2d(th,qft=qf1pTlump) (u1old*vh)
 - int2d(th,qft=qf1pTlump)(dt*(-u1old*(u1old+u2old+u3old))*vh)
-- int1d(th,4) (dt*psi*vh)
+- int1d(th,2) (dt*psi*vh)
 ;
 
 problem smu2 (u2 , vh)= 
@@ -52,7 +59,7 @@ int2d(th) (+dt*coeffd*dx(u3)*dx(vh)+ dt*coeffd*dy(u3)*dy(vh))
 ;
 //Time loop
 
-for ( it = 0; it <Itf ; it++) 
+for (int it = 0; it <Itf ; it++) 
 {
     smu1;
 	smu2;
@@ -74,9 +81,9 @@ for ( it = 0; it <Itf ; it++)
 	u3old=u3;
 	for (int j=0;j<u1old[].n ; j++)
   {
-//	cout << "u1_old(" << j <<")= "<< u1[][j] << endl;
+	cout << "u1_old(" << j <<")= "<< u1[][j] << endl;
 //	cout << "u2_old(" << j <<")= "<< u2[][j] << endl;
-	cout << "u3_old(" << j <<")= "<< u3[][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< u3[][j] << endl;
   }
 	cout << "\n" << endl;
 
@@ -87,7 +94,14 @@ for ( it = 0; it <Itf ; it++)
 	}
 }
 
-  cout<< "it= " << it << endl;
- 
 
+  cout<< "Iteration : " << Itf-1 << endl;
+ 	for (int j=0;j<u1old[].n ; j++)
+  {
+	cout << "u1_old(" << j <<")= "<< u1old[][j] << endl;
+//	cout << "u2_old(" << j <<")= "<< u2[][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< u3[][j] << endl;
+  }
+	cout << "\n" << endl;
+	
 

@@ -91,8 +91,8 @@ class FE_method :
         
         ' Coagulation coefficient (matrix) : a_ij=alpha/(i*j) '
         alpha=10.0
-        a=np.array([[alpha/i*j for i in range(1,NB+1)] for j in range(1,NB+1)])
-
+        a=np.array([[alpha/(i*j) for i in range(1,NB+1)] for j in range(1,NB+1)])
+        #a=np.ones((NB,NB));
         ' Calculates Qgain and Qloss '
         Qgain=np.zeros((NB,mesh.Ns),dtype=np.float64)
         Qloss=np.zeros((NB,mesh.Ns),dtype=np.float64)
@@ -240,11 +240,16 @@ class FE_method :
 #            this.b[m,:]+=np.dot(this.M.toarray(),this.Uold[m,:])
             
         'Condition neumann bord int fonction constante /uniquement pour U[0,:]=0.5' 
-        for p in range(0,np.size(mesh.Bord_4)):
-            taille=mesh.aire_seg(p+1,4)
+#        for p in range(0,np.size(mesh.Bord_4)):
+#            taille=mesh.aire_seg(p+1,4)
+#            
+#            p1=mesh.Bord_4[p].sommets[0]
+#            p2=mesh.Bord_4[p].sommets[1]
+        for p in range(0,np.size(mesh.Bord_2)):
+            taille=mesh.aire_seg(p+1,2)
             
-            p1=mesh.Bord_4[p].sommets[0]
-            p2=mesh.Bord_4[p].sommets[1]
+            p1=mesh.Bord_2[p].sommets[0]
+            p2=mesh.Bord_2[p].sommets[1]
             
             this.b[0,p1-1]+=(taille/2)*this.dt*psi
             this.b[0,p2-1]+=(taille/2)*this.dt*psi
@@ -262,7 +267,7 @@ class FE_method :
     def vector_U(this):
 
         Q,Qloss=this.Qcalc(this.Uold)
-        this.dt=this.dtcalc(Qloss)
+        this.dt=0.1 #this.dtcalc(Qloss)
         this.Am=this.matrices_Am()
         
         b=this.vector_b(Q)        

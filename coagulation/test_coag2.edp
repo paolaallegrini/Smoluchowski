@@ -1,0 +1,159 @@
+// Mesh
+/*
+real r=0.3;
+int n=10;
+border c1 ( t=0,1)    {x=t; y=0; label=1;}
+border c2 ( t=0,1)    {x=1; y=t; label=1;}
+border c3 ( t=1,0)    {x=t; y=1; label=1;}
+border c4 ( t=1,0)    {x=0; y=t; label=1;}
+border C(t=0, 2.*pi){x= 0.5+ r*cos(t); y= 0.5 + r*sin(t); label=2;}
+//plot(c1(n) + c2(n) + c3(n) + c4(n) + C(n));
+mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
+*/
+load "gmsh";
+mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_hole.msh");
+plot(th, wait= true, cmm = "Mon superbe maillage");
+
+//mesh th=square(n,n);
+
+
+
+//Parameters
+int NB=3, m=0;
+real dt=0.1, t=0, Tf=4;
+real psi=0.5;
+//real coeffd=0.1,
+real Itf =10;
+
+//matrice coag
+real alpha= 10.0;
+real[int,int] aa(NB,NB);
+for(int i=1;i<=NB;i++){
+	for(int j=1;j<=NB;j++){
+		aa(i-1,j-1)=alpha/(i*j);		
+		//aa(i-1,j-1)=1.0;
+	}
+}
+//vector coeff_d
+real[int] coeffd(NB);
+for (int i=0;i<NB;i++){
+	coeffd(i)= 1.0 /((i+1)^(1.0/3));
+//	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
+
+}
+
+
+
+fespace Vh(th,P1);
+Vh u,vh;
+Vh[int] uu(NB);
+Vh[int] uuold(NB);
+Vh[int] Qg(NB);
+Vh[int] Ql(NB);
+
+//Initializing u_0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
+
+
+//Solve problem cluster size 1
+problem smu1 (u , vh)= 
+int2d(th) (+dt*coeffd[0]*dx(u)*dx(vh)+ dt*coeffd[0]*dy(u)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
+- int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
+- int1d(th,2) (dt*psi*vh)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu2 (u , vh)= 
+int2d(th) (+dt*coeffd[m]*dx(u)*dx(vh)+ dt*coeffd[m]*dy(u)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[m]*vh)
+- int2d(th,qft=qf1pTlump)(dt*(Qg[m] - Ql[m])*vh)
+;
+
+//Solve problem cluster size NB
+problem smu3 (u , vh)= 
+int2d(th) (+dt*coeffd[NB-1]*dx(u)*dx(vh)+ dt*coeffd[NB-1]*dy(u)*dy(vh))
++ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
+- int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
+;
+
+
+
+
+//Time loop
+for ( int it = 0; it <Itf ; it++) 
+{	
+	//calculating Q
+	
+	//Calculating Qloss
+	for (m=0;m<NB-1;m++){
+		Vh sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uuold[m2];	
+		}
+		Ql[m]=uuold[m]*sum;
+	}
+	Ql[NB-1]=0;
+
+	//Calculating Qgain for assemblies size 2...NB-1
+	for (m=1;m<NB-1;m++){
+		Vh sum=0;	
+		for (int m2=0;m2<m;m2++){
+			int m2i=m2+1;
+			int mi=m+1;		
+			sum = sum + aa(m2i-1,mi-m2i-1)*uuold[m2i-1]*uuold[mi-m2i-1];	
+		}
+		Qg[m]=0.5*sum;
+	}
+	//Calculating Qgain for assembly size NB
+	Vh sum=0;
+	for (int j=0; j<NB-1;j++){
+		int ji=j+1;
+		for (int k=0;k<NB-1;k++){
+			int ki=k+1;
+			if((ji+ki)>=NB){	
+				sum = sum + aa(j,k)*uuold[j]*uuold[k];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+	
+	// monomeric form
+    smu1;
+	uu[0]=u;
+
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2;
+		uu[m] = u;
+	}
+
+	//Assembly size NB
+	smu3;
+	uu[NB-1] = u;
+
+	for (m=0; m<NB; m++){
+		uuold[m] = uu[m];
+	}
+	t = t + dt;
+}
+
+	//cout
+	cout << "Number vertices : " << uuold[0].n << endl;
+	cout << "Iteration : " << Itf-1 << endl;
+	for (int j=0;j<uuold[0].n ; j++)
+  {
+	cout << "u1_old(" << j <<")= "<< uu[1][][j] << endl;
+
+//	cout << "u2_old(" << j <<")= "<< u2[][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< uu[0] << endl;
+  }
+	cout << "\n" << endl;
+
+plot(th,uu[0],wait=1,fill=true);
