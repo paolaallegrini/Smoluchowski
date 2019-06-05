@@ -1,0 +1,70 @@
+macro Grad(u) [dx(u), dy(u)] //
+
+
+//________________________________________________________________//
+macro cellpb
+real r1=0.05;
+int n1=40;
+border c11 ( t=0,1)    {x=t; y=0; label=3;}
+border c22 ( t=0,1)    {x=1; y=t; label=2;}
+border c33 ( t=1,0)    {x=t; y=1; label=4;}
+border c44 ( t=1,0)    {x=0; y=t; label=1;}
+border CC(t=0, 2.*pi){x= 0.5+ r1*cos(t); y= 0.5 + r1*sin(t); label=5;}
+
+mesh th1 = buildmesh(c11(n1) + c22(n1) + c33(n1) + c44(n1) + CC(-n1));
+
+plot(th1, wait= true, cmm = "Mesh");
+/*labels left=1, right=2, down=3,up=4, hole=5;*/
+
+/* Fespace*/
+fespace Vh(th1, P1,periodic=[[1,y],[2,y],[3,x],[4,x]]);
+Vh u, vh;
+Vh w1,w2;
+
+
+/* i=1*/
+problem pbw1(u,vh)=
+int2d(th1) ((Grad(u)')*Grad(vh))
+-int1d(th1,5) (-N.x*vh);
+
+/*i=2*/
+problem pbw2(u,vh)=
+int2d(th1) ((Grad(u)')*Grad(vh))
+-int1d(th1,5) (-N.y*vh);
+/*solve*/
+pbw1;
+w1=u;
+pbw2;
+w2=u;
+plot(th1,w1,fill=true);
+/*for (int i=0; i<w1.n;i++){
+	cout << "w1(" << i << ")=" << w1[][i] << endl;
+	cout << "w2(" << i << ")=" << w2[][i] << endl;
+}
+cout << "\n" << endl;
+*/
+
+real[int,int] A(2,2);
+A(0,0) = int2d(th1) ( (Grad(w1) + [1,0])'*(Grad(w1) + [1,0]) );
+A(0,1) = int2d(th1) ( (Grad(w1) + [1,0])'*(Grad(w2) + [0,1]) );
+A(1,0) = int2d(th1) ( (Grad(w2) + [0,1])'*(Grad(w1) + [1,0]) );
+A(1,1) = int2d(th1) ( (Grad(w2) + [0,1])'*(Grad(w2) + [0,1]) );
+
+/* Idem première version
+real[int,int] A2(2,2);
+A2(0,0) = int2d(th1) ( (Grad(w1) + [1,0])'*([1,0]));
+A2(0,1) = int2d(th1) ( (Grad(w1) + [1,0])'*([0,1]) );
+A2(1,0) = int2d(th1) ( (Grad(w2) + [0,1])'*([1,0]) );
+A2(1,1) = int2d(th1) ( (Grad(w2) + [0,1])'*([0,1]) );
+*/
+for (int i=0;i<2;i++){
+	for(int j=0;j<2;j++){
+		cout << "A("<< i << "," << j <<")= "<< A(i,j) << ";" <<endl;
+	 
+	}
+}
+
+real theta;
+theta = int2d(th1) (1.0);
+cout << "\n theta = " << theta << ";" << endl;
+//

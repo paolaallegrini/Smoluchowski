@@ -25,7 +25,7 @@ print(coeff_d)
 #coeff_d=[ 0.1 for i in range(1,NB+1)]
 Ut0=np.zeros(NB)
 Tf=100
-Itf=10#int(Tf/dt) # Nb iterations
+Itf=4#int(Tf/dt) # Nb iterations
 UM=[]
 Uold,U=solve.init_cond(coeff_d,dt,Ut0)
 
@@ -60,13 +60,16 @@ for it in range(Itf):
 
 #write_file(our_mesh,Uold[NB-1,:],int(NB))
 
-cl=1
-print("Itf",Itf)
+cl=0
 for it in range(0,np.size(U[cl,:])):
 #    print('Uold({})={}, Uexacte={}'.format(it, solve.U[it],sol_exacte(our_mesh.Nodes[it].x,solve.t,coeff_d)))
 #    print('Uold({})={}'.format(it, solve.Uold[it]))
     print('U_{}({})={:.6f}'.format(cl+1,it, U[cl,it]))
     
+print("Itf : {}, t: {:.2f}".format(Itf,solve.t))
+
+print(U.min())
+
 #'L2 error'
 ##X=vecteurX(our_mesh.Nodes)
 ##Uexact=sol_exacte(X,solve.t,coeff_d)

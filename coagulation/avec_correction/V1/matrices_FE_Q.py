@@ -63,7 +63,7 @@ class FE_method :
     """
 
     def dtcalc(this,Qloss):
-        dt=dtemp=10
+        dt=dtemp=1
         U=this.Uold
         NB=this.NB
         
@@ -267,7 +267,8 @@ class FE_method :
     def vector_U(this):
 
         Q,Qloss=this.Qcalc(this.Uold)
-        this.dt=0.1 #this.dtcalc(Qloss)
+        this.dt=this.dtcalc(Qloss)
+        print("dt", this.dt)
         this.Am=this.matrices_Am()
         
         b=this.vector_b(Q)        
