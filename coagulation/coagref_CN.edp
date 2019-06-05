@@ -12,7 +12,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 real L=1;
 real r=0.1;
-int n=10;
+int n=5;
 
 // Mesh
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -209,29 +209,8 @@ cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
 	cout << "\n" << endl;
 plot(th,uu[0],wait=1,fill=true);
 
-//copie sol dans fichier
+//save sol dans fichier
 //________________________________________________________________//
-Vh[int] uuu(NB);
-ifstream g("u0.txt"); g >> uuu[0][];
-	for (int j=0;j<uuold[0].n ; j++)
-  {	
-	cout << "uu1_old(" << j <<")= "<< uuu[0][][j] << endl;
-  }
-	cout << "\n" << endl;
-plot(th,uuu[0],wait=1,fill=true);
-/*
-macro Border1
-border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
-mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
-//
-//________________________________________________________________//
-real L=1;
-real r=0.1;
-*/
-n=20;
-mesh th2 = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
-fespace Vh2(th2,P1);
-
-Vh2 u2=uuu[0];
-
-plot(th2,u2,wait=1,fill=true);
+ofstream g("u0.txt"); g << uu[0][];
+ofstream gg("u1.txt"); gg << uu[1][];
+ofstream ggg("u2.txt"); ggg << uu[2][];
