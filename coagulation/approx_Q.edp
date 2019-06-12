@@ -1,0 +1,15 @@
+ mesh th=square(2);
+
+f=5*x + 5*y;
+fespace Vh(th,P1);
+
+Vh uh;
+uh[];
+uh=f;
+
+func ff= uh*uh
+real i1=int2d(th) (ff);
+real i2=int2d(th,qft=qf1pTlump) (uh*uh);
+ 
+//cout << i1 << endl;
+cout << i2 << endl;

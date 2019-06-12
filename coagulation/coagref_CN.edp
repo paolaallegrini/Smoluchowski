@@ -12,7 +12,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 real L=1;
 real r=0.1;
-int n=5;
+int n=160;
 
 // Mesh
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -27,17 +27,17 @@ plot(th, wait= true, cmm = "Mon superbe maillage");
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=1, dt=1, t=0, Tf=4;
-real psi=0.9;
-real Itf =50;
+real dtmax=0.2, dt=0.0125, t=0, Tf=1;
+real psi=0.5;
+real Itf =Tf/dt;
 
 //matrice coag
-real alpha= 50.0;
+real alpha= 10.0;
 real[int,int] aa(NB,NB);
 for(int i=1;i<=NB;i++){
 	for(int j=1;j<=NB;j++){
-		//aa(i-1,j-1)=alpha/(i*j);		
-		aa(i-1,j-1)=1.0;
+		aa(i-1,j-1)=alpha/(i*j);		
+		//aa(i-1,j-1)=1.0;
 	}
 }
 //vector coeff_d
@@ -151,7 +151,12 @@ int2d(th) (+0.5*dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
 ;
 
 //________________________________________________________________//
+//dt=0.0125;
+//real dtcalc=dt;
+//real dtemp=0;
 
+// Get the clock in second
+real cpu=clock();
 //Time loop
 for ( int it = 0; it <Itf ; it++) 
 {	
@@ -164,9 +169,9 @@ for ( int it = 0; it <Itf ; it++)
 	//Calculating Qgain for assembly size NB
 	Qgain2
 	
-	dt=0.01;//calcdt();
-	cout << "dt=" << dt << endl;
-
+	//cout << "dt calc " << calcdt() << endl;
+	//dtemp=calcdt();
+	//if (dtemp < dt){dtcalc=dtemp; cout << "dt pb " << dtemp << endl;}
 	// monomeric form
     smu1;
 	uu[0]=u;
@@ -187,30 +192,35 @@ for ( int it = 0; it <Itf ; it++)
 	}
 	//dt
 	t = t + dt;
+	cout << "IT " << it << endl;
 
 }
-//________________________________________________________________//
-//error
 
-//real err=
+//________________________________________________________________//
 
 //________________________________________________________________//
 //cout
 
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
+cout << "hmax " << th.hmax << endl;
+// Display the total computational time
+cout << "CPU time = " << (clock()-cpu) << endl;
 
+/*
 	for (int j=0;j<uuold[0].n ; j++)
   {	
 	cout << "u1_old(" << j <<")= "<< uu[0][][j] << endl;
 //	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
 //	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
   }
+*/
 	cout << "\n" << endl;
 plot(th,uu[0],wait=1,fill=true);
 
 //save sol dans fichier
 //________________________________________________________________//
 ofstream g("u0.txt"); g << uu[0][];
-ofstream gg("u1.txt"); gg << uu[1][];
-ofstream ggg("u2.txt"); ggg << uu[2][];
+
+//ofstream gg("u1.txt"); gg << uu[1][];
+//ofstream ggg("u2.txt"); ggg << uu[2][];

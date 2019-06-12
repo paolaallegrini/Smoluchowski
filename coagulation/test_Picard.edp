@@ -12,7 +12,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 real L=1;
 real r=0.1;
-int n=50;
+int n=80;
 
 // Mesh
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -23,14 +23,14 @@ Border1
 
 //load "gmsh";
 //mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_hole.msh");
-//plot(th, wait= true, cmm = "Mon superbe maillage");
+plot(th, wait= true, cmm = "Mon superbe maillage");
 //________________________________________________________________//
 //Parameters
-int NB=6, m=0;
-real dtmax=1, dt=0.05, t=0, Tf=21;
+int NB=3, m=0;
+real dtmax=0.2, dt=0.05, t=0, Tf=0.8;
 real psi=0.5;
-real Itf =Tf/dt;
-real Ite =6;
+real Itf = Tf/dt;
+
 
 //matrice coag
 real alpha= 10.0;
@@ -54,12 +54,19 @@ Vh[int] uu(NB);
 Vh[int] uuold(NB);
 Vh[int] Qg(NB);
 Vh[int] Ql(NB);
-
+//Picard
+Vh[int] urold(NB);
+Vh[int]  ur(NB);
+real[int] er(Itf);
+int[int] itP(Itf);
+real eps =0.1; //tol ur urold
 
 //Initialise u0
 for (m=0;m<NB;m++){
 	uuold[m]=0;
 }
+
+
 //________________________________________________________________//
 //Function to calculate dt
 func real calcdt(){
@@ -85,39 +92,58 @@ func real calcdt(){
 	return dt1;
  }
 //________________________________________________________________//
-//Macro to calculate Qloss
-macro Qloss	
+//Macro to calculate Qloss 
+	//add after *uold[m]
+macro Qloss(uold)	
 for (m=0;m<NB-1;m++){
-		Vh sum=0;	
+		sum=0;	
 		for (int m2=0;m2<NB;m2++){
-			sum = sum + aa(m,m2)*uuold[m2];	
+			sum = sum + aa(m,m2)*uold[m2];	
 		}
 		Ql[m]=uuold[m]*sum;
 	}
 	Ql[NB-1]=0;
 //
+
 //________________________________________________________________//
 // macros to calculate Qgain
-macro Qgain1
+Vh sum=0; //projection of Q in Vh 
+macro Qgain1(uold)
 	for (m=2;m<NB;m++){
-		Vh sum=0;	
+		sum=0;	
 		for (int m2=1;m2<m;m2++){
-			sum = sum + aa(m2-1,m-m2-1)*uuold[m2-1]*uuold[m-m2-1];	
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
 		}
 		Qg[m-1]=0.5*sum;
 	}
+
 //
 
-macro Qgain2
-	Vh sum=0;
+macro Qgain2(uold)
+	sum=0;
 	for (int j=1; j<NB;j++){
 		for (int k=1;k<NB;k++){
 			if((j + k)>=NB){	
-				sum = sum + aa(j-1,k-1)*uuold[j-1]*uuold[k-1];
+				sum = sum + aa(j-1,k-1)*uold[j-1]*uold[k-1];
 			}	
 		}
 		Qg[NB-1]=0.5*sum;
 	}
+//
+//________________________________________________________________//
+macro Picard
+	smu1; ur[0]=u;
+
+	for (m=1; m<NB-1;m++){ smu2; ur[m] = u; }
+
+	smu3; ur[NB-1] = u;
+	
+	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (uuold[0])^2 ? (uuold[0])^2: 1) );
+	er[it]=sqrt(er[it])/th.hmax;
+	
+	for (m=0; m<NB; m++){urold[m] = ur[m];}
+
+	Qloss(urold); Qgain1(urold); Qgain2(urold);
 //
 
 //________________________________________________________________//
@@ -132,20 +158,14 @@ int2d(th) (+0.5*dt*coeffd[0]*Grad(u)'*Grad(vh))
 + int2d(th) (+0.5*dt*coeffd[0]*Grad(uuold[0])'*Grad(vh))
 - int1d(th,2) (dt*psi*vh)
 ;
-problem smu1e (u , vh)= 
-int2d(th) (+0.5*dt*coeffd[0]*Grad(u)'*Grad(vh))
-+ int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
-- int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
-+ int2d(th) (+0.5*dt*coeffd[0]*Grad(uuold[0])'*Grad(vh))
-;
 
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
 int2d(th) (+0.5*dt*coeffd[m]*Grad(u)'*Grad(vh))
 + int2d(th,qft=qf1pTlump)(u*vh)
 - int2d(th,qft=qf1pTlump) (uuold[m]*vh)
-- int2d(th,qft=qf1pTlump)(dt*(Qg[m] - Ql[m])*vh)
+- int2d(th,qft=qf1pTlump)(-dt*Ql[m]*vh)
+- int2d(th,qft=qf1pTlump)(dt*(Qg[m])*vh)
 + int2d(th) (+0.5*dt*coeffd[m]*Grad(uuold[m])'*Grad(vh))
 ;
 
@@ -159,6 +179,9 @@ int2d(th) (+0.5*dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
 ;
 
 //________________________________________________________________//
+//dt=0.0125;
+//real dtcalc=dt;
+//real dtemp=0;
 
 // Get the clock in second
 real cpu=clock();
@@ -166,22 +189,32 @@ real cpu=clock();
 for ( int it = 0; it <Itf ; it++) 
 {	
 	//calculating Q
-	
+	for (m=0; m<NB; m++){
+		urold[m] = uuold[m];
+	}
 	//Calculating Qloss
-	Qloss
+	Qloss(urold)
 	//Calculating Qgain for assemblies size 2...NB-1
-	Qgain1
+	Qgain1(urold)
 	//Calculating Qgain for assembly size NB
-	Qgain2
-	
-	//dt=0.01;//calcdt(); cout << "dt=" << dt << endl;
-	//cout << "dt=" << calcdt() << endl;
+	Qgain2(urold)
+	er[it]=1;
+	itP[it]=0;
+	while(er[it] > eps ){
+	Picard // 1 iteration
+	itP[it]= itP[it] +1;
+	//cout << "  Error Picard " << er[it] << endl;
+	}
 
+
+
+	//cout << "dt calc " << calcdt() << endl;
+	//dtemp=calcdt();
+	//if (dtemp < dt){dtcalc=dtemp; cout << "dt pb " << dtemp << endl;}
 	// monomeric form
-	if (it<= Ite){smu1;}
-	//Stop monomeric production after ite
-	else {smu1e;}
+    smu1;
 	uu[0]=u;
+
 	//Assemblies size 2...NB-1
 	for (m=1; m<NB-1;m++)
 	{
@@ -192,78 +225,46 @@ for ( int it = 0; it <Itf ; it++)
 	//Assembly size NB
 	smu3;
 	uu[NB-1] = u;
-	
-	//umin = uu[0][].min;
+
 	for (m=0; m<NB; m++){
 		uuold[m] = uu[m];
-		//if (umin > uu[m][].min) { umin=uu[m][].min;}
 	}
-	
 	//dt
 	t = t + dt;
 	//cout << "IT " << it << endl;
-	//cout <<  "it " << it <<" umin " << uu[0][].min << endl;
 
 }
-//________________________________________________________________//
-//error
 
-//real err=
+//________________________________________________________________//
 
 //________________________________________________________________//
 //cout
-/*func real uout(){
-	for (int j=0;j<uuold[0].n ; j++)
-  {	
-	cout << "u_old(" << j <<")= "<< uu[0][][j] << endl;
-	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
-	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
-  }
-	cout << "\n" << endl;
-	return;
-}
-
-//uout();
-*/
-//plot(th,uu[0],wait=1,fill=true);
-plot(th,uu[NB-1],wait=1,fill=true);
 
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
+cout << "hmax " << th.hmax << endl;
 // Display the total computational time
 cout << "CPU time = " << (clock()-cpu) << endl;
 
-
-real[int] total(NB);
-for (int i=0; i<NB; i++){
-	total[i]=int2d(th) (uu[i]);
-	cout << "m= " << i << " : " << total[i] << endl;
-}
-
-ofstream f("M7.txt"); f << total;
-
-//________________________________________________________________//
-//mesh ref
-/*int nref =160; n=nref;
-mesh thref = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
-
-fespace Vhref(thref,P1);
-Vhref uref;
-ifstream f("u0.txt"); f >> uref[];
-
-//uref projected
-Vh urefp=uref;
 /*
+	for (int j=0;j<uuold[0].n ; j++)
+  {	
+	cout << "u1_old(" << j <<")= "<< uu[0][][j] << endl;
+//	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
+  }
+*/
+cout << "\n" << endl;
+plot(th,uu[0],wait=1,fill=true);
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+/*
+//coag ref save sol dans fichier
+//________________________________________________________________//
+ofstream g("u0.txt"); g << uu[0][];
+*/
+//coag non ref // 
 Vh urefp;
 ifstream f("u0.txt"); f >> urefp[];
-
-/*	for (int j=0;j<uuold[0].n ; j++)
-  {	
-	cout << "u_0(" << j <<")= "<< uu[0][][j] << 
-	"   u_ref(" << j <<")= "<< urefp[][j] << endl;
-  }
-	cout << "\n" << endl;
-
 cout << "u_0(" << th.nv -1 <<")= "<< uu[0][][th.nv -1] << 
 	"   u_ref(" << th.nv -1 <<")= "<< urefp[][th.nv -1] << endl;
 
@@ -271,21 +272,8 @@ cout << "u_0(" << th.nv -1 <<")= "<< uu[0][][th.nv -1] <<
 real err0;
 err0=sqrt (int2d(th) ((urefp - uu[0])^2) );
 cout << "err0 " << err0 << endl;
-cout << "hmax " << th.hmax << endl;
-*/
+
+//ofstream gg("u1.txt"); gg << uu[1][];
+//ofstream ggg("u2.txt"); ggg << uu[2][];
 
 
-/* Calcul err pour 3 clusters 
-Vhref[int] uref(NB);
-ifstream f("u0.txt"); f >> uref[0][];
-ifstream ff("u1.txt"); ff >> uref[1][];
-ifstream fff("u2.txt"); fff >> uref[2][];
-
-real[int] err(NB);
-for (int i=0 ;i<NB; i++){
-	Vh urefp; 
-	urefp=uref[i];
-	err[i] = int2d(th) (sqrt((urefp - uu[i])^2));
-	cout << "err " << err[i] << endl;
-}
-*/

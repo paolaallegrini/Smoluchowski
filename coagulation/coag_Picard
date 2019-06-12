@@ -12,7 +12,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 real L=1;
 real r=0.1;
-int n=50;
+int n=5;
 
 // Mesh
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -23,14 +23,13 @@ Border1
 
 //load "gmsh";
 //mesh th=gmshload("C:/Users/Home/Desktop/stage_labo/Smoluchowski/maillage/square_hole.msh");
-//plot(th, wait= true, cmm = "Mon superbe maillage");
+plot(th, wait= true, cmm = "Mon superbe maillage");
 //________________________________________________________________//
 //Parameters
-int NB=6, m=0;
-real dtmax=1, dt=0.05, t=0, Tf=21;
+int NB=3, m=0;
+real dtmax=0.2, dt=0.2, t=0, Tf=0.2;
 real psi=0.5;
 real Itf =Tf/dt;
-real Ite =6;
 
 //matrice coag
 real alpha= 10.0;
@@ -119,6 +118,41 @@ macro Qgain2
 		Qg[NB-1]=0.5*sum;
 	}
 //
+//________________________________________________________________//
+//Calcul pour un seul m 
+func real[int] Qrcal(real[int] urold, int m){
+	real[int] Qr(th.nv);
+	//Qloss 
+		Vh sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*urold[m2];	
+		}
+		Qr=urold[m]*sum;
+/*
+	//Qgain 1
+		for (int m=2;m<NB;m++){
+		Vh sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*urold[m2-1]*urold[m-m2-1];	
+		}
+		Qr[m-1]= Qr[m-1] + 0.5*sum;
+	}
+	//Qgain NB
+	Vh sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*urold[j-1]*urold[k-1];
+			}	
+		}
+		Qr[NB-1]=0.5*sum;
+	}
+*/
+	return Qr;
+}
+
+//func Vh[int] Picard(Vh[int] ur, Vh[int] urold){
+
 
 //________________________________________________________________//
 macro Grad(u) [dx(u), dy(u)] //
@@ -131,13 +165,6 @@ int2d(th) (+0.5*dt*coeffd[0]*Grad(u)'*Grad(vh))
 - int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
 + int2d(th) (+0.5*dt*coeffd[0]*Grad(uuold[0])'*Grad(vh))
 - int1d(th,2) (dt*psi*vh)
-;
-problem smu1e (u , vh)= 
-int2d(th) (+0.5*dt*coeffd[0]*Grad(u)'*Grad(vh))
-+ int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
-- int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
-+ int2d(th) (+0.5*dt*coeffd[0]*Grad(uuold[0])'*Grad(vh))
 ;
 
 //Solve problem cluster size 2...NB-1
@@ -159,6 +186,9 @@ int2d(th) (+0.5*dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
 ;
 
 //________________________________________________________________//
+//dt=0.0125;
+//real dtcalc=dt;
+//real dtemp=0;
 
 // Get the clock in second
 real cpu=clock();
@@ -173,15 +203,26 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain1
 	//Calculating Qgain for assembly size NB
 	Qgain2
-	
-	//dt=0.01;//calcdt(); cout << "dt=" << dt << endl;
-	//cout << "dt=" << calcdt() << endl;
 
+	//Vh[int] Qr(NB);
+	//Qr=Qcalc(uuold,NB);
+/*
+	for (int j=0;j<uuold[0].n ; j++)
+  {	
+//	cout << "Q1_old(" << j <<")= "<< 0.5*Qg[0][][j] - Ql[0][][j] << endl;
+//	"  Qr_old(" << j <<")= "<< Qr[0][][j] << endl;
+//	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
+  }
+
+*/	
+	//cout << "dt calc " << calcdt() << endl;
+	//dtemp=calcdt();
+	//if (dtemp < dt){dtcalc=dtemp; cout << "dt pb " << dtemp << endl;}
 	// monomeric form
-	if (it<= Ite){smu1;}
-	//Stop monomeric production after ite
-	else {smu1e;}
+    smu1;
 	uu[0]=u;
+
 	//Assemblies size 2...NB-1
 	for (m=1; m<NB-1;m++)
 	{
@@ -192,100 +233,41 @@ for ( int it = 0; it <Itf ; it++)
 	//Assembly size NB
 	smu3;
 	uu[NB-1] = u;
-	
-	//umin = uu[0][].min;
+
 	for (m=0; m<NB; m++){
 		uuold[m] = uu[m];
-		//if (umin > uu[m][].min) { umin=uu[m][].min;}
 	}
-	
 	//dt
 	t = t + dt;
-	//cout << "IT " << it << endl;
-	//cout <<  "it " << it <<" umin " << uu[0][].min << endl;
+	cout << "IT " << it << endl;
 
 }
-//________________________________________________________________//
-//error
 
-//real err=
+//________________________________________________________________//
 
 //________________________________________________________________//
 //cout
-/*func real uout(){
-	for (int j=0;j<uuold[0].n ; j++)
-  {	
-	cout << "u_old(" << j <<")= "<< uu[0][][j] << endl;
-	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
-	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
-  }
-	cout << "\n" << endl;
-	return;
-}
-
-//uout();
-*/
-//plot(th,uu[0],wait=1,fill=true);
-plot(th,uu[NB-1],wait=1,fill=true);
 
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
+cout << "hmax " << th.hmax << endl;
 // Display the total computational time
 cout << "CPU time = " << (clock()-cpu) << endl;
 
-
-real[int] total(NB);
-for (int i=0; i<NB; i++){
-	total[i]=int2d(th) (uu[i]);
-	cout << "m= " << i << " : " << total[i] << endl;
-}
-
-ofstream f("M7.txt"); f << total;
-
-//________________________________________________________________//
-//mesh ref
-/*int nref =160; n=nref;
-mesh thref = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
-
-fespace Vhref(thref,P1);
-Vhref uref;
-ifstream f("u0.txt"); f >> uref[];
-
-//uref projected
-Vh urefp=uref;
 /*
-Vh urefp;
-ifstream f("u0.txt"); f >> urefp[];
-
-/*	for (int j=0;j<uuold[0].n ; j++)
+	for (int j=0;j<uuold[0].n ; j++)
   {	
-	cout << "u_0(" << j <<")= "<< uu[0][][j] << 
-	"   u_ref(" << j <<")= "<< urefp[][j] << endl;
+	cout << "u1_old(" << j <<")= "<< uu[0][][j] << endl;
+//	cout << "u2_old(" << j <<")= "<< uu[1][][j] << endl;
+//	cout << "u3_old(" << j <<")= "<< uu[2][][j] << endl;
   }
+*/
 	cout << "\n" << endl;
+plot(th,uu[0],wait=1,fill=true);
 
-cout << "u_0(" << th.nv -1 <<")= "<< uu[0][][th.nv -1] << 
-	"   u_ref(" << th.nv -1 <<")= "<< urefp[][th.nv -1] << endl;
+//save sol dans fichier
+//________________________________________________________________//
+ofstream g("u0.txt"); g << uu[0][];
 
-
-real err0;
-err0=sqrt (int2d(th) ((urefp - uu[0])^2) );
-cout << "err0 " << err0 << endl;
-cout << "hmax " << th.hmax << endl;
-*/
-
-
-/* Calcul err pour 3 clusters 
-Vhref[int] uref(NB);
-ifstream f("u0.txt"); f >> uref[0][];
-ifstream ff("u1.txt"); ff >> uref[1][];
-ifstream fff("u2.txt"); fff >> uref[2][];
-
-real[int] err(NB);
-for (int i=0 ;i<NB; i++){
-	Vh urefp; 
-	urefp=uref[i];
-	err[i] = int2d(th) (sqrt((urefp - uu[i])^2));
-	cout << "err " << err[i] << endl;
-}
-*/
+//ofstream gg("u1.txt"); gg << uu[1][];
+//ofstream ggg("u2.txt"); ggg << uu[2][];
