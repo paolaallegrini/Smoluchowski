@@ -1,0 +1,150 @@
+real L=1;
+real r=0.2;
+int n=5*4;
+int n2=n*2;
+int n3=n2*2;
+real h=1.0/n;
+//mesh th=square(n,n);
+// Mesh
+
+border c1 ( t=0,L)    {x=t; y=0; label=1;}
+border c2 ( t=0,L)    {x=L; y=t; label=1;}
+border c3 ( t=L,0)    {x=t; y=L; label=1;}
+border c4 ( t=L,0)    {x=0; y=t; label=1;}
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
+mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) +C(-n3) );
+
+
+//mesh th2=square(n2,n2);
+//mesh th3=square(n3,n3);
+plot(th, wait= true, cmm = "Mesh");
+plot(th2, wait= true, cmm = "Mesh2");
+plot(th3, wait= true, cmm = "Mesh3");
+
+cout << "  -- mesh: Hmax = " << th.hmax << endl;
+//________________________________________________________________//
+//Parameters
+
+real dtmax=0.2, dt=h, t=0, Tf=3;
+real Itf =Tf/dt;
+real coeffd=1;
+macro Grad(u) [dx(u), dy(u)] //
+func psi=0.5;
+//________________________________________________________________//
+/*fespace Vh(th,P1);
+Vh u,uold,vh;
+Vh u1;
+//Initialise u0
+uold=0.0;
+func psi=0.5; //source broder 
+
+problem heat(u,vh)=int2d(th,qft=qf1pTlump)(
+                             u*vh+0.5*dt*(dx(u)*dx(vh)+dy(u)*dy(vh))
+                           )
+                 -int2d(th,qft=qf1pTlump)(
+                             uold*vh-0.5*dt*(dx(uold)*dx(vh)+dy(uold)*dy(vh))
+                           )
+				- int1d(th,2) (dt*psi*vh);
+
+for (int it=0; it < Tf/dt; it++){
+	heat;
+	uold=u;
+	t=t+dt;
+}
+u1=u;
+//________________________________________________________________//
+//Maillage h/2
+fespace Vh2(th2,P1);
+Vh2 u2,uold2,vh2;
+//Initialise u0
+uold2=0.0;
+
+problem heat2(u2,vh2)=int2d(th2,qft=qf1pTlump)(
+                             u2*vh2+0.5*dt*(dx(u2)*dx(vh2)+dy(u2)*dy(vh2))
+                           )
+                 -int2d(th2,qft=qf1pTlump)(
+                             uold2*vh2-0.5*dt*(dx(uold2)*dx(vh2)+dy(uold2)*dy(vh2))
+                           )
+				- int1d(th2,2) (dt*psi*vh2);
+
+
+dt=h/2;
+t=0;
+for (int it=0; it < Tf/dt; it++){
+	heat2;
+	uold2=u2;
+	t=t+dt;
+}
+*/
+//________________________________________________________________//
+//Maillage h/4
+fespace Vh3(th3,P1);
+Vh3 u3,uold3,vh3;
+//Initialise u0
+uold3=0.0; 
+
+problem heat3(u3,vh3)=int2d(th3,qft=qf1pTlump)(
+                             u3*vh3+0.5*dt*(dx(u3)*dx(vh3)+dy(u3)*dy(vh3))
+                           )
+                 -int2d(th3,qft=qf1pTlump)(
+                             uold3*vh3-0.5*dt*(dx(uold3)*dx(vh3)+dy(uold3)*dy(vh3))
+                           )
+				- int1d(th3,2) (dt*psi*vh3);
+dt=h/4;
+t=0;
+for (int it=0; it < Tf/dt; it++){
+	heat3;
+	uold3=u3;
+	t=t+dt;
+}
+
+
+//plot(u1,fill=true);
+//plot(u2,fill=true);
+plot(u3,fill=true);
+//real err1= sqrt( int2d(th) ((u1 - u2)^2) ) ;
+//real err2= sqrt( int2d(th) ((u2 - u3)^2) ) ;
+//real err3= sqrt( int2d(th) ((u3 - u4)^2) ) ;
+cout << "dt3 " << dt << " hmax= " << th.hmax << endl;
+//cout << "error1 L2 " << err1 << endl;
+//cout << "error2 L2 " << err2 << endl;
+
+load "iovtk"; //load''library'of'vtk'
+savevtk("diff_hole.vtk",th3,[u3,0,0],u3,dataname="concentration");//
+
+/*
+uold=0.0;
+t=0;
+dt=dt/2;
+for (int it=0; it < Tf/dt; it++){
+	heat;
+	uold=u;
+	t=t+dt;
+}
+cout << "itf2 " << Tf/dt <<endl;
+u2=u;
+
+uold=0.0;
+t=0;
+dt=dt/2;
+for (int it=0; it < Tf/dt; it++){
+	heat;
+	uold=u;
+	t=t+dt;
+}
+u3=u;
+cout << "Itf3 " << Tf/dt << " dt3= " << dt <<endl;
+
+uold=0.0;
+t=0;
+dt=dt/2;
+for (int it=0; it < Tf/dt; it++){
+	heat;
+	uold=u;
+	t=t+dt;
+}
+u4=u;
+cout << "Itf3 " << Tf/dt << " dt4= " << dt <<endl;
+*/

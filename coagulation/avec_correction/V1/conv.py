@@ -51,11 +51,15 @@ print(" P diff CN : ", np.around(PCN,decimals=3))
 
 error = [0.00688912, 0.00242316, 0.0007903358, 0.000174205]
 PCN=[math.log(error[e]/error[e+1])/math.log(2) for e in range(np.size(error)-1)]
-print(" P diff CN : ", np.around(PCN,decimals=3))
+print(" P diff CN dt=0.0125 : ", np.around(PCN,decimals=3))
 
 
 
-
+# my heat_eq psi=0.5 Tf=10 n=100  coeffd=0.1   ref sol with dt=0.00625
+#dt=0.2:/2:0.0125
+error=[0.00349127, 0.00120488, 0.000369723, 5.8835e-5,4.27232e-7, 2.02684e-010]#, 2.00649e-10]
+PCN=[math.log(error[e]/error[e+1])/math.log(2) for e in range(np.size(error)-1)]
+print(" P diff CN dt=0.00625: ", np.around(PCN,decimals=3))
 
 
 
@@ -70,16 +74,16 @@ print(" P diff CN : ", np.around(PCN,decimals=3))
 #PCN=[math.log(error[e]/error[e+1])/math.log(2) for e in range(np.size(error)-1)]
 #print(" P lin : ", np.around(PCN,decimals=3))
 
+
+
+
+#heat eq example freefem
 #error=[0.132463,0.0351687, 0.00893047]
-# at TF 
-error=[0.0355335,0.00885413,0.0022132]	
-# max with lumped
-#error=[0.101606,0.0208001 ,0.00500231]
-#at Tf with lumped
-error=[0.0496353,0.0114092,0.00279499]
-PCN=[math.log(error[e]/error[e+1])/math.log(2) for e in range(np.size(error)-1)]
-print(" P diff CN : ", np.around(PCN,decimals=3))
-
-
-
-
+## at TF 
+##error=[0.0355335,0.00885413,0.0022132]	
+## max with lumped
+##error=[0.101606,0.0208001 ,0.00500231]
+##at Tf with lumped 
+##error=[0.0496353,0.0114092,0.00279499]
+#PCN=[math.log(error[e]/error[e+1])/math.log(2) for e in range(np.size(error)-1)]
+#print(" P diff CN : ", np.around(PCN,decimals=3))

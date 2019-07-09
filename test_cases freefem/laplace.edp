@@ -1,0 +1,31 @@
+//Laplace test case 
+
+int m=5*2*2*2*2;// number of points
+mesh th=square(m,m);
+real h=1.0/m;// size of h
+plot(th);
+
+// Definition of the fespace
+//
+
+func uex=x^3 -3*x*y^2;
+
+fespace Vh(th,P1);
+Vh u,v;
+Vh uexh=x^3 -3*x*y^2;
+
+//Neumann condition for all boundary edges : refer to p28 manual (thermal conduction example)
+
+problem heat(u,v)=int2d(th,qft=qf1pTlump)((dx(u)*dx(v)+dy(u)*dy(v)))
+                           +on(1,2,3,4, u=uex);
+
+heat; 
+
+real errh = (int2d(th)(u-uexh)^2);
+real err = sqrt (int2d(th)(u-uex)^2);
+
+plot(u,fill=true);
+
+cout << "h= " << h << endl;
+cout << "error uexh " << errh <<endl;
+cout << "error uex " << err <<endl;

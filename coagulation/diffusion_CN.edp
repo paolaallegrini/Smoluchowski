@@ -1,0 +1,57 @@
+macro Border1
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
+//
+//________________________________________________________________//
+real L=1;
+real r=0.1;
+int n=100;
+// Mesh
+border c1 ( t=0,L)    {x=t; y=0; label=1;}
+border c2 ( t=0,L)    {x=L; y=t; label=1;}
+border c3 ( t=L,0)    {x=t; y=L; label=1;}
+border c4 ( t=L,0)    {x=0; y=t; label=1;}
+Border1
+plot(th, wait= true, cmm = "Mesh");
+cout << "  -- mesh: Hmax = " << th.hmax << endl;
+//________________________________________________________________//
+//Parameters
+
+real dtmax=0.2, dt=0.8, t=0, Tf=10;
+real Itf =Tf/dt;
+real coeffd=0.1;
+macro Grad(u) [dx(u), dy(u)] //
+//________________________________________________________________//
+fespace Vh(th,P1);
+Vh u,uold,vh;
+//Initialise u0
+uold=0.0;
+real psi=0.5; //source broder 
+
+problem heat(u,vh)=
+int2d(th,qft=qf1pTlump)(u*vh)
++ int2d(th,qft=qf1pTlump) (+0.5*dt*coeffd*Grad(u)'*Grad(vh))
+- int2d(th,qft=qf1pTlump) (uold*vh)
+- int2d(th,qft=qf1pTlump) (-0.5*dt*coeffd*Grad(uold)'*Grad(vh))
+- int1d(th,2) (dt*psi*vh);
+
+for (int it=0; it < Itf; it++){
+	heat; 
+	uold=u;
+	t=t+dt;
+}
+
+//plot(th,u);
+//ofstream f("uref.txt"); f <<u[];
+Vh uref;
+ifstream g("uref.txt"); g >> uref[];
+/*for (int i=0; i< th.nv -1; i++){
+cout << "uref= " << uref[][i] << "  u= " << u[][i] << endl;
+}*/
+
+cout << "uref= " << uref[][100] << "  u= " << u[][100] << endl;
+
+
+real err= sqrt( int2d(th) ((u - uref)^2) ) ;
+cout << "error L2 " << err << endl;
+
