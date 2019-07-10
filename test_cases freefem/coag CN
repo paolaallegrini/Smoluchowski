@@ -13,7 +13,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=0.1, dt=dtmax, t=0, Tf=4;
+real dtmax=0.4, dt=dtmax, t=0, Tf=4;
 real dtemp;
 real psi=0.5;
 real Itf = Tf/dt;
@@ -44,6 +44,8 @@ Vh[int] uu4(NB);
 Vh[int] uuold(NB);
 Vh[int] Qg(NB);
 Vh[int] Ql(NB);
+Vh[int] Qgold(NB);
+Vh[int] Qlold(NB);
 
 //Picard
 Vh[int] urold(NB);
@@ -51,7 +53,7 @@ Vh[int]  ur(NB);
 real[int] er(Itf*2*2*2);
 int[int] itP(Itf*2*2*2);
 int warning=0; 
-real eps =0.3; //tol ur urold
+real eps =0.2; //tol ur urold
 real errp;
 int maxItp=30;
 
@@ -145,7 +147,8 @@ macro Grad(u) [dx(u), dy(u)] //
 //Solve problem cluster size 1
 problem smu1 (u , vh)= 
   int2d(th,qft=qf1pTlump)(u*vh)
-+ int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*u*Ql[0]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*uuold[0]*Qlold[0]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
 - int1d(th,2) (dt*psi*vh)
 ;
@@ -153,16 +156,17 @@ problem smu1 (u , vh)=
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
   int2d(th,qft=qf1pTlump)(u*vh)
-+ int2d(th,qft=qf1pTlump)(dt*u*Ql[m]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*u*Ql[m]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*uuold[m]*Qlold[m]*vh)
+- int2d(th,qft=qf1pTlump)( 0.5*dt*(Qg[m] + Qgold[m])*vh)
 - int2d(th,qft=qf1pTlump) (uuold[m]*vh)
-- int2d(th,qft=qf1pTlump)(dt*Qg[m]*vh)
 ;
 
 //Solve problem cluster size NB
 problem smu3 (u , vh)= 
   int2d(th,qft=qf1pTlump)(u*vh)
 - int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
-- int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
+- int2d(th,qft=qf1pTlump) ( 0.5*dt*( Qg[NB-1] + Qgold[NB-1] )*vh )
 ;
 
 //________________________________________________________________//
@@ -171,6 +175,10 @@ real umin;
 
 for ( int it = 0; it <Itf ; it++) 
 {
+
+	Qloss(uuold,Qlold)
+	Qgain1(uuold,Qgold)
+	Qgain2(uuold,Qgold)
 	er[it]=1;
 	itP[it]=0;
 	while( (er[it] > eps) && (itP[it] < maxItp) )
@@ -198,6 +206,7 @@ for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
 cout << " t1  =   " << t1 << endl;
 //________________________________________________________________//
+
 //Time loop 2 
 dt=dt/2;
 Itf=Tf/dt;
@@ -211,6 +220,9 @@ for (m=0;m<NB;m++){
 
 for ( int it = 0; it <Itf ; it++) 
 {	
+	Qloss(uuold,Qlold)
+	Qgain1(uuold,Qgold)
+	Qgain2(uuold,Qgold)
 	er[it]=1;
 	itP[it]=0;
 	while( (er[it] > eps) && (itP[it] < maxItp) )
@@ -240,6 +252,18 @@ for ( int it = 0; it <Itf ; it++)
 for (m=0; m<NB; m++){uu2[m]=ur[m];}
 real t2=t;
 //________________________________________________________________//
+plot(th,uuold[0],wait=1,fill=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+cout << "Nb of warnings EPicard > 15 : " << warning << endl;
+
+real[int] err1(NB);
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	cout << "err1("<<i+1<<")= " << err1[i] << ";" << endl;
+}
+
+/*
 //Time loop 3
 dt=dt/2;
 Itf=Tf/dt;
@@ -253,6 +277,9 @@ for (m=0;m<NB;m++){
 
 for ( int it = 0; it <Itf ; it++) 
 {	
+	Qloss(uuold,Qlold)
+	Qgain1(uuold,Qgold)
+	Qgain2(uuold,Qgold)
 	er[it]=1;
 	itP[it]=0;
 	while( (er[it] > eps) && (itP[it] < maxItp) )
@@ -297,6 +324,9 @@ for (m=0;m<NB;m++){
 
 for ( int it = 0; it <Itf ; it++) 
 {	
+	Qloss(uuold,Qlold)
+	Qgain1(uuold,Qgold)
+	Qgain2(uuold,Qgold)
 	er[it]=1;
 	itP[it]=0;
 	while( (er[it] > eps) && (itP[it] < maxItp) )
@@ -353,3 +383,4 @@ for (int i=0 ;i<NB; i++){
 	cout << "err2("<<i+1<<")= " << err2[i] << endl;
 	cout << "err3("<<i+1<<")= " << err3[i] << endl;
 }
+*/

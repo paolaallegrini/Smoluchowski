@@ -1,0 +1,524 @@
+//________________________________________________________________//
+real L=1;
+real r=0.2;
+int n=5*2;
+int n2=n*2;
+int n3=n2*2;
+real h=1.0/n;
+// Mesh
+border c1 ( t=0,L)    {x=t; y=0; label=1;}
+border c2 ( t=0,L)    {x=L; y=t; label=1;}
+border c3 ( t=L,0)    {x=t; y=L; label=1;}
+border c4 ( t=L,0)    {x=0; y=t; label=1;}
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
+mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) + C(-n3) );
+//________________________________________________________________//
+//Parameters
+int NB=3, m=0;
+real dt=h, t=0, Tf=4;
+real dtemp;
+real psi=0.5;
+real Itf = Tf/dt;
+
+
+//matrice coag
+real alpha= 10.0;
+real[int,int] aa(NB,NB);
+for(int i=1;i<=NB;i++){
+	for(int j=1;j<=NB;j++){
+		aa(i-1,j-1)=alpha/(i*j);		
+		//aa(i-1,j-1)=1.0;
+	}
+}
+//vector coeff_d
+real[int] coeffd(NB);
+for (int i=0;i<NB;i++){
+	coeffd(i)= 1.0 /((i+1)^(1.0/3));
+//	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
+}
+//________________________________________________________________//
+//Maillage h 
+fespace Vh(th,P1);
+Vh u,vh;
+Vh[int] uu1(NB);
+Vh[int] uuold(NB);
+Vh[int] Qg(NB);
+Vh[int] Ql(NB);
+Vh[int] Qgold(NB);
+Vh[int] Qlold(NB);
+
+//Picard
+Vh[int] urold(NB);
+Vh[int]  ur(NB);
+real[int] er(Itf*2*2*2);
+int[int] itP(Itf*2*2*2);
+int warning=0; 
+real eps =0.2; //tol ur urold
+real errp;
+int maxItp=30;
+
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+	ur[m]=0;
+}
+//________________________________________________________________//
+//Macro to calculate Qloss 
+	//add after *uold[m]
+macro Qloss(uold,Ql)	
+for (m=0;m<NB-1;m++){
+		Vh sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uold[m2];	
+		}
+		Ql[m]=sum;
+	}
+	Ql[NB-1]=0;
+//
+
+//________________________________________________________________//
+// macros to calculate Qgain
+macro Qgain1(uold,Qg)
+	for (m=2;m<NB;m++){
+		Vh sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
+		}
+		Qg[m-1]=0.5*sum;
+	}
+
+//
+
+//ur and uoldn
+macro Qgain2(ur,Qg)
+	Vh sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*ur[j-1]*ur[k-1];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+//
+//________________________________________________________________//
+
+//________________________________________________________________//
+macro Picard
+	smu1; 	ur[0]=u;
+	for (m=1; m<NB-1;m++){ smu2; ur[m] = u;}
+	smu3; 	ur[NB-1] = u;
+
+
+	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (urold[0])^2 ? (urold[0])^2: 1) );
+
+	for (m=1; m<NB;m++){
+		errp=int2d(th) ( ((ur[m] - urold[m])^2)/ ( (urold[m])^2 ? (urold[m])^2: 1) );
+		er[it]=max(er[it],errp);
+	}
+	er[it]=sqrt(er[it]);
+	if(er[it]>15) {warning= warning+1;}
+	
+	for (m=0; m<NB; m++){	urold[m] = ur[m];}
+
+//
+//________________________________________________________________//
+macro Grad(u) [dx(u), dy(u)] //
+
+//Solve problem cluster size 1
+problem smu1 (u , vh)= 
+  int2d(th,qft=qf1pTlump)(u*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*u*Ql[0]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*uuold[0]*Qlold[0]*vh)
+- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
+- int1d(th,2) (dt*psi*vh)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu2 (u , vh)= 
+  int2d(th,qft=qf1pTlump)(u*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*u*Ql[m]*vh)
++ int2d(th,qft=qf1pTlump)( 0.5*dt*uuold[m]*Qlold[m]*vh)
+- int2d(th,qft=qf1pTlump)( 0.5*dt*(Qg[m] + Qgold[m])*vh)
+- int2d(th,qft=qf1pTlump) (uuold[m]*vh)
+;
+
+//Solve problem cluster size NB
+problem smu3 (u , vh)= 
+  int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
+- int2d(th,qft=qf1pTlump) ( 0.5*dt*( Qg[NB-1] + Qgold[NB-1] )*vh )
+;
+
+//________________________________________________________________//
+//Time loop
+real umin;
+
+for ( int it = 0; it <Itf ; it++) 
+{
+
+	Qloss(uuold,Qlold)
+	Qgain1(uuold,Qgold)
+	Qgain2(uuold,Qgold)
+	er[it]=1;
+	itP[it]=0;
+	while( (er[it] > eps) && (itP[it] < maxItp) )
+	{
+	Qloss(urold,Ql)
+	Qgain1(urold,Qg)
+	Qgain2(urold,Qg)
+	Picard
+	itP[it]= itP[it] +1;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	}
+	
+	umin = ur[0][].min;
+	for (m=0; m<NB; m++)
+	{
+		uuold[m]=ur[m];
+		if (umin > uuold[m][].min) { umin=uuold[m][].min;}
+	}
+	
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
+}
+for (m=0; m<NB; m++){uu1[m]=ur[m];}
+real t1=t;
+cout << " t1  =   " << t1 << endl;
+//________________________________________________________________//
+cout << "Number vertices : " << th.nv << endl;
+cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
+cout << "hmax " << th.hmax << endl;
+plot(th,uuold[0],wait=1,fill=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+cout << "Nb of warnings EPicard > 15 : " << warning << endl;
+//________________________________________________________________//
+//Maillage h/2
+fespace Vh2(th2,P1);
+Vh2 u2,vh2;
+Vh2[int] uu2(NB);
+Vh2[int] uuold2(NB);
+Vh2[int] Qg2(NB);
+Vh2[int] Ql2(NB);
+Vh2[int] Qgold2(NB);
+Vh2[int] Qlold2(NB);
+
+//Picard
+Vh2[int] urold2(NB);
+Vh2[int]  ur2(NB);
+
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold2[m]=0;
+	ur2[m]=0;
+}
+//________________________________________________________________//
+//Macro to calculate Qloss 
+	//add after *uold[m]
+macro Qloss2(uold,Ql)	
+for (m=0;m<NB-1;m++){
+		Vh2 sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uold[m2];	
+		}
+		Ql[m]=sum;
+	}
+	Ql[NB-1]=0;
+//
+
+//________________________________________________________________//
+// macros to calculate Qgain
+macro Qgain12(uold,Qg)
+	for (m=2;m<NB;m++){
+		Vh2 sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
+		}
+		Qg[m-1]=0.5*sum;
+	}
+
+//
+
+//ur and uold
+macro Qgain22(ur,Qg)
+	Vh2 sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*ur[j-1]*ur[k-1];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+//
+//________________________________________________________________//
+
+//________________________________________________________________//
+macro Picard2(ur,urold,u)
+	smu12; 	ur[0]=u;
+	for (m=1; m<NB-1;m++){ smu22; ur[m] = u;}
+	smu32; 	ur[NB-1] = u;
+
+
+	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (urold[0])^2 ? (urold[0])^2: 1) );
+
+	for (m=1; m<NB;m++){
+		errp=int2d(th) ( ((ur[m] - urold[m])^2)/ ( (urold[m])^2 ? (urold[m])^2: 1) );
+		er[it]=max(er[it],errp);
+	}
+	er[it]=sqrt(er[it]);
+	if(er[it]>15) {warning= warning+1;}
+	
+	for (m=0; m<NB; m++){	urold[m] = ur[m];}
+
+//
+//________________________________________________________________//
+
+//Solve problem cluster size 1
+problem smu12 (u2 , vh2)= 
+  int2d(th2,qft=qf1pTlump)(u2*vh2)
++ int2d(th2,qft=qf1pTlump)( 0.5*dt*u*Ql2[0]*vh2)
++ int2d(th2,qft=qf1pTlump)( 0.5*dt*uuold2[0]*Qlold2[0]*vh2)
+- int2d(th2,qft=qf1pTlump) (uuold2[0]*vh2)
+- int1d(th2,2) (dt*psi*vh2)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu22 (u2 , vh2)= 
+  int2d(th2,qft=qf1pTlump)(u2*vh2)
++ int2d(th2,qft=qf1pTlump)( 0.5*dt*u2*Ql2[m]*vh2)
++ int2d(th2,qft=qf1pTlump)( 0.5*dt*uuold2[m]*Qlold2[m]*vh2)
+- int2d(th2,qft=qf1pTlump)( 0.5*dt*(Qg2[m] + Qgold2[m])*vh2)
+- int2d(th2,qft=qf1pTlump) (uuold2[m]*vh2)
+;
+
+//Solve problem cluster size NB
+problem smu32 (u2 , vh2)= 
+  int2d(th2,qft=qf1pTlump)(u2*vh2)
+- int2d(th2,qft=qf1pTlump) (uuold2[NB-1]*vh2)
+- int2d(th2,qft=qf1pTlump) ( 0.5*dt*( Qg2[NB-1] + Qgold2[NB-1] )*vh2 )
+;
+
+//________________________________________________________________//
+//Time loop 2
+real umin2;
+t=0;
+dt=dt/2;
+Itf=Itf*2;
+for ( int it = 0; it <Itf ; it++) 
+{
+
+	Qloss2(uuold2,Qlold2)
+	Qgain12(uuold2,Qgold2)
+	Qgain22(uuold2,Qgold2)
+	er[it]=1;
+	itP[it]=0;
+	while( (er[it] > eps) && (itP[it] < maxItp) )
+	{
+	Qloss2(urold2,Ql2)
+	Qgain12(urold2,Qg2)
+	Qgain22(urold2,Qg2)
+	Picard2(ur2,urold2,u2)
+	itP[it]= itP[it] +1;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	}
+	
+	umin2 = ur2[0][].min;
+	for (m=0; m<NB; m++)
+	{
+		uuold2[m]=ur2[m];
+		if (umin2 > uuold2[m][].min) { umin2=uuold2[m][].min;}
+	}
+	
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
+}
+for (m=0; m<NB; m++){uu2[m]=ur2[m];}
+real t2=t;
+//________________________________________________________________//
+//Maillage h/4
+fespace Vh3(th3,P1);
+Vh3 u3,vh3;
+Vh3[int] uu3(NB);
+Vh3[int] uuold3(NB);
+Vh3[int] Qg3(NB);
+Vh3[int] Ql3(NB);
+Vh3[int] Qgold3(NB);
+Vh3[int] Qlold3(NB);
+
+//Picard
+Vh3[int] urold3(NB);
+Vh3[int]  ur3(NB);
+
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold3[m]=0;
+	ur3[m]=0;
+}
+//________________________________________________________________//
+//Macro to calculate Qloss 
+	//add after *uold[m]
+macro Qloss3(uold,Ql)	
+for (m=0;m<NB-1;m++){
+		Vh3 sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uold[m2];	
+		}
+		Ql[m]=sum;
+	}
+	Ql[NB-1]=0;
+//
+
+//________________________________________________________________//
+// macros to calculate Qgain
+macro Qgain13(uold,Qg)
+	for (m=2;m<NB;m++){
+		Vh3 sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
+		}
+		Qg[m-1]=0.5*sum;
+	}
+
+//
+
+//ur and uold
+macro Qgain23(ur,Qg)
+	Vh3 sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*ur[j-1]*ur[k-1];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+//
+//________________________________________________________________//
+
+//________________________________________________________________//
+macro Picard3(ur,urold,u)
+	smu13; 	ur[0]=u;
+	for (m=1; m<NB-1;m++){ smu23; ur[m] = u;}
+	smu33; 	ur[NB-1] = u;
+
+
+	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (urold[0])^2 ? (urold[0])^2: 1) );
+
+	for (m=1; m<NB;m++){
+		errp=int2d(th) ( ((ur[m] - urold[m])^2)/ ( (urold[m])^2 ? (urold[m])^2: 1) );
+		er[it]=max(er[it],errp);
+	}
+	er[it]=sqrt(er[it]);
+	if(er[it]>15) {warning= warning+1;}
+	
+	for (m=0; m<NB; m++){	urold[m] = ur[m];}
+
+//
+//________________________________________________________________//
+
+//Solve problem cluster size 1
+problem smu13 (u3 , vh3)= 
+  int2d(th3,qft=qf1pTlump)(u3*vh3)
++ int2d(th3,qft=qf1pTlump)( 0.5*dt*u*Ql3[0]*vh3)
++ int2d(th3,qft=qf1pTlump)( 0.5*dt*uuold3[0]*Qlold3[0]*vh3)
+- int2d(th3,qft=qf1pTlump) (uuold3[0]*vh3)
+- int1d(th3,2) (dt*psi*vh3)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu23 (u3 , vh3)= 
+  int2d(th3,qft=qf1pTlump)(u3*vh3)
++ int2d(th3,qft=qf1pTlump)( 0.5*dt*u3*Ql3[m]*vh3)
++ int2d(th3,qft=qf1pTlump)( 0.5*dt*uuold3[m]*Qlold3[m]*vh3)
+- int2d(th3,qft=qf1pTlump)( 0.5*dt*(Qg3[m] + Qgold3[m])*vh3)
+- int2d(th3,qft=qf1pTlump) (uuold3[m]*vh3)
+;
+
+//Solve problem cluster size NB
+problem smu33 (u3 , vh3)= 
+  int2d(th3,qft=qf1pTlump)(u3*vh3)
+- int2d(th3,qft=qf1pTlump) (uuold3[NB-1]*vh3)
+- int2d(th3,qft=qf1pTlump) ( 0.5*dt*( Qg3[NB-1] + Qgold3[NB-1] )*vh3 )
+;
+
+//________________________________________________________________//
+//Time loop 3
+real umin3;
+t=0;
+dt=dt/2;
+Itf=Itf*2;
+for ( int it = 0; it <Itf ; it++) 
+{
+
+	Qloss3(uuold3,Qlold3)
+	Qgain13(uuold3,Qgold3)
+	Qgain23(uuold3,Qgold3)
+	er[it]=1;
+	itP[it]=0;
+	while( (er[it] > eps) && (itP[it] < maxItp) )
+	{
+	Qloss3(urold3,Ql3)
+	Qgain13(urold3,Qg3)
+	Qgain23(urold3,Qg3)
+	Picard3(ur3,urold3,u3)
+	itP[it]= itP[it] +1;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	}
+	
+	umin3 = ur3[0][].min;
+	for (m=0; m<NB; m++)
+	{
+		uuold3[m]=ur3[m];
+		if (umin3 > uuold3[m][].min) { umin3=uuold3[m][].min;}
+	}
+	
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << " dt " << dt << " umin3 " << umin3 << endl;
+}
+for (m=0; m<NB; m++){uu3[m]=ur3[m];}
+real t3=t;
+
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
+
+//________________________________________________________________//
+
+real[int] err1(NB);
+real[int] err2(NB);
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	cout << "err1("<<i+1<<")= " << err1[i] << endl;
+	err2[i] = sqrt( int2d(th) ((uu2[i] - uu3[i])^2) );
+	cout << "err2("<<i+1<<")= " << err2[i] << endl;
+}
+
+
+
+
+
+
+
+
+
+
+// Calcul err pour 3 clusters 
+/*
+real[int] err1(NB);
+real[int] err2(NB);
+real[int] err3(NB);
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+	err3[i] = sqrt ( int2d(th) ((uu3[i] - uu4[i])^2) );
+	
+	cout << "err1("<<i+1<<")= " << err1[i] << endl;
+	cout << "err2("<<i+1<<")= " << err2[i] << endl;
+	cout << "err3("<<i+1<<")= " << err3[i] << endl;
+}
+*/
