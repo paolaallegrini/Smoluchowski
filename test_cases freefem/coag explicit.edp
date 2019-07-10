@@ -26,7 +26,7 @@ mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=0.04, dt=dtmax, t=0, Tf=2;
+real dtmax=0.01, dt=dtmax, t=0, Tf=2;
 real psi=0.5;
 real Itf =Tf/dtmax;
 
@@ -188,7 +188,7 @@ for ( int it = 0; it <Itf ; it++)
 
 }
 real t1=t;
-cout << " t1 t2 t3  =   " << t1 << endl;
+cout << " t1 =   " << t1 << endl;
 //________________________________________________________________//
 
 //Time loop 2 
@@ -223,7 +223,6 @@ for ( int it = 0; it <Itf ; it++)
 	
 	t = t + dt;
 	cout <<  "it " << it <<" umin2 " << umin << endl;
-
 }
 real t2=t;
 
@@ -276,8 +275,8 @@ cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
 real[int] err1(NB);
 real[int] err2(NB);
 for (int i=0 ;i<NB; i++){ 
-	err1[i] = int2d(th) (sqrt((uu[i] - uu2[i])^2));
-	err2[i] = int2d(th) (sqrt((uu2[i] - uu3[i])^2));
+	err1[i] = sqrt( int2d(th) ((uu[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
 
 	cout << "err1("<<i+1<<")= " << err1[i] << endl;
 	cout << "err2("<<i+1<<")= " << err2[i] << endl;

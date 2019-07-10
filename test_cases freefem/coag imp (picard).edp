@@ -1,0 +1,229 @@
+//________________________________________________________________//
+real L=1;
+real r=0.2;
+int n=5*2;
+
+// Mesh
+border c1 ( t=0,L)    {x=t; y=0; label=1;}
+border c2 ( t=0,L)    {x=L; y=t; label=1;}
+border c3 ( t=L,0)    {x=t; y=L; label=1;}
+border c4 ( t=L,0)    {x=0; y=t; label=1;}
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
+plot(th, wait= true, cmm = "Mon superbe maillage");
+//________________________________________________________________//
+//Parameters
+int NB=5, m=0;
+real dtmax=0.2, dt=dtmax, t=0, Tf=2;
+real dtemp;
+real psi=0.5;
+real Itf = Tf/dt;
+
+
+//matrice coag
+real alpha= 10.0;
+real[int,int] aa(NB,NB);
+for(int i=1;i<=NB;i++){
+	for(int j=1;j<=NB;j++){
+		aa(i-1,j-1)=alpha/(i*j);		
+		//aa(i-1,j-1)=1.0;
+	}
+}
+//vector coeff_d
+real[int] coeffd(NB);
+for (int i=0;i<NB;i++){
+	coeffd(i)= 1.0 /((i+1)^(1.0/3));
+//	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
+}
+//________________________________________________________________//
+fespace Vh(th,P1);
+Vh u,vh;
+Vh[int] uu(NB);
+Vh[int] uuold(NB);
+Vh[int] Qg(NB);
+Vh[int] Ql(NB);
+//Picard
+Vh[int] urold(NB);
+Vh[int]  ur(NB);
+real[int] er(Itf);
+int[int] itP(Itf);
+real eps =0.3; //tol ur urold
+real errp;
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+	urold[m]=0;
+}
+
+
+//________________________________________________________________//
+//Function to calculate dt
+func real calcdt(){
+	real dt1=dtmax;
+	real dtemp=dtmax;
+	for( int i=0; i<NB; i++){
+		for (int id=0; id < th.nv ; id++){
+			if (Ql[i][][id] != 0){
+			 	dtemp=(uuold[i][][id])/(Ql[i][][id]);
+			 	if (dtemp<dt1){
+					dt1=dtemp;
+				}
+			}	
+		} 
+	}
+	return dt1;
+ }
+//________________________________________________________________//
+//Macro to calculate Qloss 
+	//add after *uold[m]
+macro Qloss(uold)	
+for (m=0;m<NB-1;m++){
+		Vh sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uold[m2];	
+		}
+		Ql[m]=uold[m]*sum;
+	}
+	Ql[NB-1]=0;
+//
+
+//________________________________________________________________//
+// macros to calculate Qgain
+macro Qgain1(uold)
+	for (m=2;m<NB;m++){
+		Vh sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
+		}
+		Qg[m-1]=0.5*sum;
+	}
+
+//
+
+macro Qgain2(uold)
+	Vh sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*uold[j-1]*uold[k-1];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+//
+//________________________________________________________________//
+macro Picard
+	smu1; ur[0]=u;
+
+	for (m=1; m<NB-1;m++){ smu2; ur[m] = u; }
+	smu3; ur[NB-1] = u;
+
+	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (urold[0])^2 ? (urold[0])^2: 1) );
+/*	for (m=1; m<NB-1;m++){
+	errp=int2d(th) ( ((ur[m] - urold[m])^2)/ ( (urold[m])^2 ? (urold[m])^2: 1) );
+	er[it]=max(er[it],errp);
+	}
+*/	m=0;
+	er[it]=int2d(th) ( ((ur[m] - urold[m])^2)/ ( (urold[m])^2 ? (urold[m])^2: 1) );
+	er[it]=sqrt(er[it]);
+	
+	for (m=0; m<NB; m++){urold[m] = ur[m];}
+
+//
+
+//________________________________________________________________//
+macro Grad(u) [dx(u), dy(u)] //
+
+//Solve problem cluster size 1
+problem smu1 (u , vh)= 
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
+- int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
+- int1d(th,2) (dt*psi*vh)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu2 (u , vh)= 
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[m]*vh)
+- int2d(th,qft=qf1pTlump)(-dt*Ql[m]*vh)
+- int2d(th,qft=qf1pTlump)(dt*(Qg[m])*vh)
+;
+
+//Solve problem cluster size NB
+problem smu3 (u , vh)= 
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
+- int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
+;
+
+//________________________________________________________________//
+//Time loop
+real umin;
+
+for ( int it = 0; it <Itf ; it++) 
+{	
+
+/*
+	//Calculating Qloss
+	Qloss(urold)
+	//Calculating Qgain for assemblies size 2...NB-1
+	Qgain1(urold)
+	//Calculating Qgain for assembly size NB
+	Qgain2(urold)
+*/
+	er[it]=1;
+	itP[it]=0;
+	while((er[it] > eps) && (itP[it] < 10) ){
+		//Calculating Qloss
+	Qloss(urold)
+	//Calculating Qgain for assemblies size 2...NB-1
+	Qgain1(urold)
+	//Calculating Qgain for assembly size NB
+	Qgain2(urold)
+	Picard // 1 iteration
+	itP[it]= itP[it] +1;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	}
+	
+// monomeric form
+	smu1;
+	uu[0]=u;
+
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++){
+		smu2;
+		uu[m] = u;
+	}
+	//Assembly size NB
+	smu3;
+	uu[NB-1] = u;
+
+	umin = uu[0][].min;
+	for (m=0; m<NB; m++){
+		uuold[m] = uu[m];
+		urold[m] = uu[m];
+		if (umin > uu[m][].min) { umin=uu[m][].min;}
+	}
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
+}
+
+real t1=t;
+
+cout << " t1  =   " << t1 << endl;
+
+//________________________________________________________________//
+
+//________________________________________________________________//
+//cout
+
+cout << "Number vertices : " << th.nv << endl;
+cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
+cout << "hmax " << th.hmax << endl;
+plot(th,uu[0],wait=1,fill=true);
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+
+//coag ref save sol dans fichier
+//________________________________________________________________//
