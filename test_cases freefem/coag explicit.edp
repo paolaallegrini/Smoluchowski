@@ -1,0 +1,284 @@
+macro Border2 
+border C1(t=0, 2.*pi){x= 0.3*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+border C2(t=0, 2.*pi){x= 0.6*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+border C3(t=0, 2.*pi){x= 0.9*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C1(-n) + C2(-n) +C3(-n));
+//
+
+macro Border1
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
+//
+//________________________________________________________________//
+real L=1;
+real r=0.2;
+int n=5*2*2;
+real h=1.0/n;
+
+// Mesh
+border c1 ( t=0,L)    {x=t; y=0; label=1;}
+border c2 ( t=0,L)    {x=L; y=t; label=1;}
+border c3 ( t=L,0)    {x=t; y=L; label=1;}
+border c4 ( t=L,0)    {x=0; y=t; label=1;}
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+
+//________________________________________________________________//
+//Parameters
+int NB=3, m=0;
+real dtmax=0.01, dt=dtmax, t=0, Tf=2;
+real psi=0.5;
+real Itf =Tf/dtmax;
+
+//matrice coag
+real alpha= 10.0;
+real[int,int] aa(NB,NB);
+for(int i=1;i<=NB;i++){
+	for(int j=1;j<=NB;j++){
+		aa(i-1,j-1)=alpha/(i*j);		
+		//aa(i-1,j-1)=1.0;
+	}
+}
+//vector coeff_d
+real[int] coeffd(NB);
+for (int i=0;i<NB;i++){
+	coeffd(i)= 1.0 /((i+1)^(1.0/3));
+//	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
+}
+//________________________________________________________________//
+fespace Vh(th,P1);
+Vh u,vh;
+Vh[int] uu(NB);
+Vh[int] uu2(NB);
+Vh[int] uu3(NB);
+Vh[int] uuold(NB);
+Vh[int] Qg(NB);
+Vh[int] Ql(NB);
+
+real umin=0;
+
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
+//________________________________________________________________//
+//Function to calculate dt
+func real calcdt(){
+	real dt1=dtmax;
+	real dtemp=dtmax;
+	for( int i=0; i<NB; i++){
+		//cout << "cluster size " << i << endl;
+		for (int id=0; id < th.nv ; id++){
+			if (Ql[i][][id] != 0){
+			//cout <<"in dt " << endl;
+			//cout << "Q=" << Ql[i][][id] << "uold = " << uuold[i][][id]<<endl;
+			 	dtemp=(uuold[i][][id])/(Ql[i][][id]);
+			 	if (dtemp<dt1){
+					//cout << "dtemp" << dtemp << endl;
+					//cout << "Q=" << Ql[i][][id] << "uold = " << uuold[i][][id]<<endl;
+
+					//cout << "    uold " << uuold[i][][id] << "Ql " << Ql << endl;
+					dt1=dtemp;
+				}
+			}	
+		} 
+	}
+	return dt1;
+ }
+//________________________________________________________________//
+//Macro to calculate Qloss
+macro Qloss	
+for (m=0;m<NB-1;m++){
+		Vh sum=0;	
+		for (int m2=0;m2<NB;m2++){
+			sum = sum + aa(m,m2)*uuold[m2];	
+		}
+		Ql[m]=uuold[m]*sum;
+	}
+	Ql[NB-1]=0;
+//
+//________________________________________________________________//
+// macros to calculate Qgain
+macro Qgain1
+	for (m=2;m<NB;m++){
+		Vh sum=0;	
+		for (int m2=1;m2<m;m2++){
+			sum = sum + aa(m2-1,m-m2-1)*uuold[m2-1]*uuold[m-m2-1];	
+		}
+		Qg[m-1]=0.5*sum;
+	}
+//
+
+macro Qgain2
+	Vh sum=0;
+	for (int j=1; j<NB;j++){
+		for (int k=1;k<NB;k++){
+			if((j + k)>=NB){	
+				sum = sum + aa(j-1,k-1)*uuold[j-1]*uuold[k-1];
+			}	
+		}
+		Qg[NB-1]=0.5*sum;
+	}
+//
+
+//________________________________________________________________//
+macro Grad(u) [dx(u), dy(u)] //
+
+//Solve problem cluster size 1
+problem smu1 (u , vh)= 
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
+- int2d(th,qft=qf1pTlump)(-dt*Ql[0]*vh)
+- int1d(th,2) (dt*psi*vh)
+;
+
+//Solve problem cluster size 2...NB-1
+problem smu2 (u , vh)= 
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[m]*vh)
+- int2d(th,qft=qf1pTlump)(dt*(Qg[m] - Ql[m])*vh)
+;
+
+//Solve problem cluster size NB
+problem smu3 (u , vh)=
+ int2d(th,qft=qf1pTlump)(u*vh)
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
+- int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
+;
+//________________________________________________________________//
+//Time loop 1
+for ( int it = 0; it <Itf ; it++) 
+{	
+	//calculating Q
+	
+	//Calculating Qloss
+	Qloss
+	//Calculating Qgain for assemblies size 2...NB-1
+	Qgain1
+	//Calculating Qgain for assembly size NB
+	Qgain2
+	
+	dt=calcdt(); cout << "dt=" << dt << endl;
+	//cout << "dt=" << calcdt() << endl;
+
+	// monomeric form
+	smu1;
+	uu[0]=u;
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2;
+		uu[m] = u;
+	}
+
+	//Assembly size NB
+	smu3;
+	uu[NB-1] = u;
+	
+	umin = uu[0][].min;
+	for (m=0; m<NB; m++){
+		uuold[m] = uu[m];
+		if (umin > uu[m][].min) { umin=uu[m][].min;}
+	}
+	
+	//dt
+	t = t + dt;
+	//cout << "IT " << it << endl;
+	cout <<  "it " << it <<" umin " << umin << endl;
+
+}
+real t1=t;
+cout << " t1 =   " << t1 << endl;
+//________________________________________________________________//
+
+//Time loop 2 
+dtmax=dtmax/2;
+Itf=Tf/dtmax;
+t=0;
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
+for ( int it = 0; it <Itf ; it++) 
+{	
+	Qloss
+	Qgain1
+	Qgain2
+	dt=calcdt(); cout << "dt=" << dt << endl;
+	// monomeric form
+	smu1;	uu2[0]=u;
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2; uu2[m] = u;
+	}
+	//Assembly size NB
+	smu3;	uu2[NB-1] = u;
+	
+	umin = uu[0][].min;
+	for (m=0; m<NB; m++){
+		uuold[m] = uu2[m];
+		if (umin > uu2[m][].min) { umin=uu2[m][].min;}
+	}
+	
+	t = t + dt;
+	cout <<  "it " << it <<" umin2 " << umin << endl;
+}
+real t2=t;
+
+
+//________________________________________________________________//
+//Time loop 3
+dtmax=dtmax/2;
+Itf=Tf/dtmax;
+t=0;
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
+for ( int it = 0; it <Itf ; it++) 
+{	
+	Qloss
+	Qgain1
+	Qgain2
+	dt=calcdt(); cout << "dt=" << dt << endl;
+	// monomeric form
+	smu1;	uu3[0]=u;
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2; uu3[m] = u;
+	}
+	//Assembly size NB
+	smu3;	uu3[NB-1] = u;
+	
+	umin = uu[0][].min;
+	for (m=0; m<NB; m++){
+		uuold[m] = uu3[m];
+		if (umin > uu3[m][].min) { umin=uu3[m][].min;}
+	}
+	
+	t = t + dt;
+	cout <<  "it " << it <<" umin2 " << umin << endl;
+
+}
+real t3=t;
+//________________________________________________________________//
+
+plot(th,uu[NB-1],wait=1,fill=true);
+plot(th,uu2[NB-1],wait=1,fill=true);
+plot(th,uu3[NB-1],wait=1,fill=true);
+cout << "Number vertices : " << th.nv << endl;
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
+
+//________________________________________________________________//
+real[int] err1(NB);
+real[int] err2(NB);
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+
+	cout << "err1("<<i+1<<")= " << err1[i] << endl;
+	cout << "err2("<<i+1<<")= " << err2[i] << endl;
+}
+
