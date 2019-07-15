@@ -17,7 +17,7 @@ mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) + C(-n3) );
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dt=h, t=0, Tf=4;
+real dt=h, t=0, Tf=3;
 real dtemp;
 real psi=0.5;
 real Itf = Tf/dt;
@@ -54,7 +54,7 @@ Vh[int] urold(NB);
 Vh[int]  ur(NB);
 real[int] er(Itf*2*2*2);
 int[int] itP(Itf*2*2*2);
-int warning=0; 
+int[int] warning(3); 
 real eps =0.2; //tol ur urold
 real errp;
 int maxItp=30;
@@ -119,7 +119,7 @@ macro Picard
 		er[it]=max(er[it],errp);
 	}
 	er[it]=sqrt(er[it]);
-	if(er[it]>15) {warning= warning+1;}
+	if(er[it]>15) {warning[0]= warning[0]+1;}
 	
 	for (m=0; m<NB; m++){	urold[m] = ur[m];}
 
@@ -155,7 +155,7 @@ problem smu3 (u , vh)=
 //________________________________________________________________//
 //Time loop
 real umin;
-
+warning[0]=0;
 for ( int it = 0; it <Itf ; it++) 
 {
 
@@ -189,13 +189,14 @@ for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
 cout << " t1  =   " << t1 << endl;
 //________________________________________________________________//
-cout << "Number vertices : " << th.nv << endl;
+/*cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
 cout << "hmax " << th.hmax << endl;
 plot(th,uuold[0],wait=1,fill=true,cmm="u1");
 plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
 cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
 cout << "Nb of warnings EPicard > 15 : " << warning << endl;
+*/
 //________________________________________________________________//
 //Maillage h/2
 fespace Vh2(th2,P1);
@@ -271,7 +272,7 @@ macro Picard2(ur,urold,u)
 		er[it]=max(er[it],errp);
 	}
 	er[it]=sqrt(er[it]);
-	if(er[it]>15) {warning= warning+1;}
+	if(er[it]>15) {warning[1]= warning[1] + 1;}
 	
 	for (m=0; m<NB; m++){	urold[m] = ur[m];}
 
@@ -306,9 +307,10 @@ problem smu32 (u2 , vh2)=
 //________________________________________________________________//
 //Time loop 2
 real umin2;
+warning[1]=0;
 t=0;
 dt=dt/2;
-Itf=Itf*2;
+Itf = Tf/dt;
 for ( int it = 0; it <Itf ; it++) 
 {
 
@@ -415,7 +417,7 @@ macro Picard3(ur,urold,u)
 		er[it]=max(er[it],errp);
 	}
 	er[it]=sqrt(er[it]);
-	if(er[it]>15) {warning= warning+1;}
+	if(er[it]>15) {warning[2]= warning[2]+1;}
 	
 	for (m=0; m<NB; m++){	urold[m] = ur[m];}
 
@@ -450,9 +452,10 @@ problem smu33 (u3 , vh3)=
 //________________________________________________________________//
 //Time loop 3
 real umin3;
+warning[2]=0;
 t=0;
 dt=dt/2;
-Itf=Itf*2;
+Itf = Tf/dt;
 for ( int it = 0; it <Itf ; it++) 
 {
 
@@ -485,23 +488,39 @@ for ( int it = 0; it <Itf ; it++)
 for (m=0; m<NB; m++){uu3[m]=ur3[m];}
 real t3=t;
 
-cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
-
 //________________________________________________________________//
+plot(th,uuold[0],wait=1,fill=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
+cout << "h= " << h << endl; 
+cout << " Warnings Picard : "<< warning[0] <<" " << warning[1] << " "<< warning[2] << endl;
+
 
 real[int] err1(NB);
 real[int] err2(NB);
+real[int] err2h(NB);
+real p=0;
+real ph=0;
 for (int i=0 ;i<NB; i++){ 
 	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
-	cout << "err1("<<i+1<<")= " << err1[i] << endl;
-	err2[i] = sqrt( int2d(th) ((uu2[i] - uu3[i])^2) );
-	cout << "err2("<<i+1<<")= " << err2[i] << endl;
+	cout << "err1("<<i+1<<")= " << err1[i] <<  ";" << endl;
+	err2[i] = sqrt( int2d(th2) ((uu2[i] - uu3[i])^2) );
+	err2h[i] = sqrt( int2d(th) ((uu2[i] - uu3[i])^2) );
+	cout << "err2("<<i+1<<")= " << err2[i] << ";"<< endl;
 }
 
+for  (int i=0 ;i<NB; i++){ 
+	ph=log(err1[i]/err2h[i]);
+	ph=ph/log(2.0);
+	cout << "ph(" << i+1 <<")= " << ph << ";" << endl;
+}
 
-
-
-
+for  (int i=0 ;i<NB; i++){ 
+	p=log(err1[i]/err2[i]);
+	p=p/log(2.0);
+	cout << "p(" << i+1 <<")= " << p << ";" << endl;
+}
 
 
 

@@ -1,7 +1,7 @@
 //________________________________________________________________//
 real L=1;
 real r=0.2;
-int n=5*2*2;
+int n=5*2;
 
 // Mesh
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -12,8 +12,8 @@ border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
 mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 //Parameters
-int NB=3, m=0;
-real dtmax=0.4, dt=dtmax, t=0, Tf=4;
+int NB=5, m=0;
+real dtmax=0., dt=dtmax, t=0, Tf=3;
 real dtemp;
 real psi=0.5;
 real Itf = Tf/dt;
@@ -165,8 +165,8 @@ problem smu2 (u , vh)=
 //Solve problem cluster size NB
 problem smu3 (u , vh)= 
   int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
 - int2d(th,qft=qf1pTlump) ( 0.5*dt*( Qg[NB-1] + Qgold[NB-1] )*vh )
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
 ;
 
 //________________________________________________________________//
@@ -204,7 +204,7 @@ for ( int it = 0; it <Itf ; it++)
 }
 for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
-cout << " t1  =   " << t1 << endl;
+cout << " t1  =   " << t1 << " warning = " << warning << endl;
 //________________________________________________________________//
 
 //Time loop 2 
@@ -252,18 +252,6 @@ for ( int it = 0; it <Itf ; it++)
 for (m=0; m<NB; m++){uu2[m]=ur[m];}
 real t2=t;
 //________________________________________________________________//
-plot(th,uuold[0],wait=1,fill=true,cmm="u1");
-plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
-cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
-cout << "Nb of warnings EPicard > 15 : " << warning << endl;
-
-real[int] err1(NB);
-for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
-	cout << "err1("<<i+1<<")= " << err1[i] << ";" << endl;
-}
-
-/*
 //Time loop 3
 dt=dt/2;
 Itf=Tf/dt;
@@ -310,6 +298,47 @@ for ( int it = 0; it <Itf ; it++)
 for (m=0; m<NB; m++){uu3[m]=ur[m];}
 real t3=t;
 //________________________________________________________________//
+
+
+plot(th,uuold[0],wait=1,fill=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
+cout << "h= " << dtmax << endl; 
+cout << " Warnings Picard : "<< warning << endl; //[0] <<" " << warning[1] << " "<< warning[2] << endl;
+
+
+real[int] err1(NB);
+real[int] err2(NB);
+real p=0;
+
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	cout << "err1("<<i+1<<")= " << err1[i] <<  ";" << endl;
+	err2[i] = sqrt( int2d(th) ((uu2[i] - uu3[i])^2) );
+	cout << "err2("<<i+1<<")= " << err2[i] << ";"<< endl;
+}
+for  (int i=0 ;i<NB; i++){ 
+	p=log(err1[i]/err2[i]);
+	p=p/log(2.0);
+	cout << "p(" << i+1 <<")= " << p << "; " ;
+}
+ endl; 
+
+
+
+
+/*plot(th,uuold[0],wait=1,fill=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+cout << "Nb of warnings EPicard > 15 : " << warning << endl;
+
+real[int] err1(NB);
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	cout << "err1("<<i+1<<")= " << err1[i] << ";" << endl;
+}
+
 //________________________________________________________________//
 //Time loop 4
 dt=dt/2;

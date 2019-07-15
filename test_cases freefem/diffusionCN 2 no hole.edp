@@ -16,9 +16,6 @@ mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
 mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
 mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) +C(-n3) );
 
-
-//mesh th2=square(n2,n2);
-//mesh th3=square(n3,n3);
 plot(th, wait= true, cmm = "Mesh");
 plot(th2, wait= true, cmm = "Mesh2");
 plot(th3, wait= true, cmm = "Mesh3");
