@@ -13,14 +13,14 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=0.4, dt=dtmax, t=0, Tf=4;
+real dtmax=0.16, dt=dtmax, t=0, Tf=12;
 real dtemp;
-real psi=0.5;
+func psi=0.5;
 real Itf = Tf/dt;
 
 
 //matrice coag
-real alpha= 10.0;
+real alpha= 50.0;
 real[int,int] aa(NB,NB);
 for(int i=1;i<=NB;i++){
 	for(int j=1;j<=NB;j++){
@@ -58,7 +58,7 @@ int maxItp=30;
 //Initialise u0
 for (m=0;m<NB;m++){
 	uuold[m]=0;
-	ur[m]=0;
+	urold[m]=0;
 }
 
 
@@ -164,7 +164,7 @@ macro Grad(u) [dx(u), dy(u)] //
 
 //Solve problem cluster size 1
 problem smu1 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh + dt*coeffd[0]*Grad(u)'*Grad(vh))
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
 - int1d(th,2) (dt*psi*vh)
@@ -172,7 +172,7 @@ problem smu1 (u , vh)=
 
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh + dt*coeffd[m]*Grad(u)'*Grad(vh))
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[m]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[m]*vh)
 - int2d(th,qft=qf1pTlump)(dt*Qg[m]*vh)
@@ -180,7 +180,7 @@ problem smu2 (u , vh)=
 
 //Solve problem cluster size NB
 problem smu3 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh+ dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
 - int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
 - int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
 ;
@@ -355,8 +355,8 @@ real t4=t;
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
 cout << "hmax " << th.hmax << endl;
-plot(th,uuold[0],wait=1,fill=true,cmm="u1");
-plot(th,uuold[NB-1],wait=1,fill=true,cmm="uNB");
+plot(th,uuold[0],wait=1,fill=true,value=true,cmm="u1");
+plot(th,uuold[NB-1],wait=1,fill=true,value= true, cmm="uNB");
 cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
 cout << "Nb of warnings EPicard > 15 : " << warning << endl;
 

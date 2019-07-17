@@ -1,10 +1,8 @@
 real L=1;
 real r=0.2;
-int n=5*4;
-int n2=n*2;
-int n3=n2*2;
+int n=5*2*2;
+
 real h=1.0/n;
-//mesh th=square(n,n);
 // Mesh
 
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
@@ -13,20 +11,16 @@ border c3 ( t=L,0)    {x=t; y=L; label=1;}
 border c4 ( t=L,0)    {x=0; y=t; label=1;}
 border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
 mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
-mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
-mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) +C(-n3) );
-
 plot(th, wait= true, cmm = "Mesh");
-plot(th2, wait= true, cmm = "Mesh2");
-plot(th3, wait= true, cmm = "Mesh3");
+
 
 cout << "  -- mesh: Hmax = " << th.hmax << endl;
 
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=0.2, dt=dtmax, t=0, Tf=4;
-real psi=0.5;
+real dtmax=0.4, dt=dtmax, t=0, Tf=12;
+func psi=0.5;
 real Itf =Tf/dtmax;
 
 //matrice coag
@@ -48,6 +42,8 @@ for (int i=0;i<NB;i++){
 fespace Vh(th,P1);
 Vh u,vh;
 Vh[int] uu(NB);
+Vh[int] uu2(NB);
+Vh[int] uu3(NB);
 Vh[int] uuold(NB);
 Vh[int] Qg(NB);
 Vh[int] Ql(NB);
@@ -108,23 +104,23 @@ macro Qgain1(u,Qg)
 	}
 //
 
-macro Qgain11(u,m,Qg)
+macro Qgain11(u,uold,m,Qg)
 	{
 		Vh sum=0;	
 		for (int m2=1;m2<m;m2++){
-			sum = sum + aa(m2-1,m-m2-1)*u[m2-1]*u[m-m2-1];	
+			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*u[m-m2-1];	
 		}
 		Qg[m-1]=0.5*sum;
 	}
 //
 
-macro Qgain2(u,Qg)
+macro Qgain2(u,uold,Qg)
 {
 	Vh sum=0;
 	for (int j=1; j<NB;j++){
 		for (int k=1;k<NB;k++){
 			if((j + k)>=NB){	
-				sum = sum + aa(j-1,k-1)*u[j-1]*u[k-1];
+				sum = sum + aa(j-1,k-1)*uold[j-1]*u[k-1];
 			}	
 		}
 		Qg[NB-1]=0.5*sum;
@@ -137,25 +133,25 @@ macro Grad(u) [dx(u), dy(u)] //
 
 //Solve problem cluster size 1
 problem smu1 (u , vh)= 
- int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[0]*vh)
+ int2d(th,qft=qf1pTlump)(u*vh + 0.5*dt*coeffd[0]*Grad(u)'*Grad(vh) )
+- int2d(th,qft=qf1pTlump) (uuold[0]*vh - 0.5*dt*coeffd[0]*Grad(uuold[0])'*Grad(vh) )
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
 - int1d(th,2) (dt*psi*vh)
 ;
 
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
- int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[m]*vh)
+ int2d(th,qft=qf1pTlump)(u*vh + 0.5*dt*coeffd[m]*Grad(u)'*Grad(vh))
+- int2d(th,qft=qf1pTlump) (uuold[m]*vh  - 0.5*dt*coeffd[m]*Grad(uuold[m])'*Grad(vh) )
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[m]*vh)
-- int2d(th,qft=qf1pTlump)(0.5*dt*(Qg[m]+Qgold[m])*vh)
+- int2d(th,qft=qf1pTlump)(dt*(Qg[m])*vh)
 ;
 
 //Solve problem cluster size NB
 problem smu3 (u , vh)=
- int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
-- int2d(th,qft=qf1pTlump) (0.5*dt*(Qg[NB-1]+Qgold[NB-1])*vh)
+ int2d(th,qft=qf1pTlump)(u*vh  + 0.5*dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
+- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh  - 0.5*dt*coeffd[NB-1]*Grad(uuold[NB-1])'*Grad(vh) )
+- int2d(th,qft=qf1pTlump) (dt*(Qg[NB-1])*vh)
 ;
 //________________________________________________________________//
 //Time loop 1
@@ -166,9 +162,9 @@ for ( int it = 0; it <Itf ; it++)
 	//Calculating Qloss
 	Qloss
 	//Calculating Qgain for assemblies size 2...NB-1
-	Qgain1(uuold,Qgold)
+	//Qgain1(uuold,Qgold)
 	//Calculating Qgain for assembly size NB
-	Qgain2(uuold,Qgold)
+	//Qgain2(uuold,Qgold)
 	
 	//dt=calcdt(); cout << "dt=" << dt << endl;
 	//cout << "dt=" << calcdt() << endl;
@@ -179,135 +175,29 @@ for ( int it = 0; it <Itf ; it++)
 	//Assemblies size 2...NB-1
 	for (m=1; m<NB-1;m++)
 	{
-		Qgain11(uu,m,Qg)
+		Qgain11(uu,uuold,m+1,Qg)
 		smu2;
 		uu[m] = u;
 	}
 
 	//Assembly size NB
+	Qgain2(uu,uuold,Qg)
 	smu3;
 	uu[NB-1] = u;
-	
-	umin = uu[0][].min;
+
 	for (m=0; m<NB; m++){
 		uuold[m] = uu[m];
-		if (umin > uu[m][].min) { umin=uu[m][].min;}
 	}
-	
+
 	//dt
 	t = t + dt;
 	//cout << "IT " << it << endl;
-	cout <<  "it " << it <<" umin " << umin << endl;
+	cout <<  "it " << it << endl;
 
 }
 real t1=t;
-cout << " t1 =   " << t1 << endl;
-//________________________________________________________________//
-
-//Time loop 2 
-dtmax=dtmax/2;
-dt=dtmax;
-Itf=Tf/dtmax;
-t=0;
-//Initialise u0
-for (m=0;m<NB;m++){
-	uuold[m]=0;
-}
-for ( int it = 0; it <Itf ; it++) 
-{	
-	Qloss
-	Qgain1(uuold,Qgold)
-	Qgain2(uuold,Qgold)
-    cout << "dt=" << calcdt() << endl;
-	// monomeric form
-	smu1;	uu2[0]=u;
-	//Assemblies size 2...NB-1
-	for (m=1; m<NB-1;m++)
-	{
-		Qgain11(uu2,m,Qg)
-		smu2; uu2[m] = u;
-	}
-	//Assembly size NB
-	Qgain2(uu2,Qg)
-	smu3;	uu2[NB-1] = u;
-	
-	umin = uu[0][].min;
-	for (m=0; m<NB; m++){
-		uuold[m] = uu2[m];
-		if (umin > uu2[m][].min) { umin=uu2[m][].min;}
-	}
-	
-	t = t + dt;
-	cout <<  "it " << it <<" umin2 " << umin << endl;
-}
-real t2=t;
-
-
-//________________________________________________________________//
-//Time loop 3
-dtmax=dtmax/2;
-dt=dtmax;
-Itf=Tf/dtmax;
-t=0;
-//Initialise u0
-for (m=0;m<NB;m++){
-	uuold[m]=0;
-}
-for ( int it = 0; it <Itf ; it++) 
-{	
-	Qloss
-	Qgain1(uuold,Qgold)
-	Qgain2(uuold,Qgold)
-
-	cout << "dt=" << calcdt() << endl;
-	// monomeric form
-	smu1;	uu3[0]=u;
-	//Assemblies size 2...NB-1
-	for (m=1; m<NB-1;m++)
-	{
-		Qgain11(uu3,m,Qg)
-		smu2; uu3[m] = u;
-	}
-	//Assembly size NB
-	Qgain2(uu3,Qg)
-	smu3;	uu3[NB-1] = u;
-	
-	umin = uu[0][].min;
-	for (m=0; m<NB; m++){
-		uuold[m] = uu3[m];
-		if (umin > uu3[m][].min) { umin=uu3[m][].min;}
-	}
-	
-	t = t + dt;
-	cout <<  "it " << it <<" umin2 " << umin << endl;
-
-}
-real t3=t;
-//________________________________________________________________//
-
 plot(th,uu[NB-1],wait=1,fill=true);
-plot(th,uu2[NB-1],wait=1,fill=true);
-plot(th,uu3[NB-1],wait=1,fill=true);
 cout << "Number vertices : " << th.nv << endl;
-cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
-
+cout << " t1 " << t1 << endl; 
+cout << "________________________________________________________________" <<endl;
 //________________________________________________________________//
-real[int] err1(NB);
-real[int] err2(NB);
-real[int] p(NB);
-
-
-for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt( int2d(th) ((uu[i] - uu2[i])^2) );
-	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
-
-	cout << "err1("<<i+1<<")= " << err1[i] << endl;
-	cout << "err2("<<i+1<<")= " << err2[i] << endl;
-}
-
-for  (int i=0 ;i<NB; i++){ 
-	p=log(err1[i]/err2[i]);
-	p=p/log(2.0);
-	cout << "p(" << i+1 <<")= " << p[i] << ";" <<endl;
-}
-endl;
