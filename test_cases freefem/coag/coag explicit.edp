@@ -12,7 +12,7 @@ mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 real L=1;
 real r=0.2;
-int n=5*2*2*2*2;
+int n=5*2*2;
 real h=1.0/n;
 
 // Mesh
@@ -26,7 +26,7 @@ mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
 //________________________________________________________________//
 //Parameters
 int NB=3, m=0;
-real dtmax=0.04, dt=dtmax, t=0, Tf=4;
+real dtmax=0.04, dt=dtmax, t=0, Tf=0.08;
 real psi=0.5;
 real Itf =Tf/dtmax;
 

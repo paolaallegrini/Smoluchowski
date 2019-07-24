@@ -1,0 +1,14 @@
+Picard v2 th conv rate : 
+
+Parameters: 
+Rectangle L=1*L/50 ; 
+periodic boundaries selon le long d'y [[1,x],[3,x]])
+comme résoudre problème 1d 
+func psi = cos^2(x)  entre 0 et 1
+int1d(th,3) psi : changement label bord
+
+Picard : eps=0.2
+NB= , Tf= , dt= 
+
+n=
+

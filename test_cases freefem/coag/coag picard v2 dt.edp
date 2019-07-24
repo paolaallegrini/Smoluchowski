@@ -1,21 +1,41 @@
 //________________________________________________________________//
-real L=2;
-real r=0.2;
-int n=5*2*2*2;
+real L=1;
+
+int n=5*2*2*2*2*2;
+
+real h=1.0/n;
+mesh th = square(n,L,[x,y/50]);
+plot(th);
 
 // Mesh
+/*
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
 border c2 ( t=0,L)    {x=L; y=t; label=1;}
 border c3 ( t=L,0)    {x=t; y=L; label=1;}
 border c4 ( t=L,0)    {x=0; y=t; label=1;}
 border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
-mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
+mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+//th = adaptmesh(th,0.05,IsMetric=1,splitpbedge=1);
+mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
+//th2 = adaptmesh(th2,0.05,IsMetric=1,splitpbedge=1);
+mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) +C(-n3) );
+//th3 = adaptmesh(th3,0.05,IsMetric=1,splitpbedge=1);
+border C1(t=0, 2.*pi){x= 0.5*L + r2*cos(t); y= 0.5*L + r2*sin(t); label=1;}
+border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
+mesh th=buildmesh(C1(n) + C(-n));
+mesh th2=buildmesh(C1(n2) + C(-n2));
+mesh th3=buildmesh(C1(n3) + C(-n3));
+*/
+//plot(th);plot(th2);plot(th3);
+
+
 //________________________________________________________________//
 //Parameters
-int NB=10, m=0;
-real dtmax=0.4, dt=dtmax, t=0, Tf=1.6;
+int NB=3, m=0;
+real dtmax=0.025, dt=dtmax, t=0, Tf=8;
 real dtemp;
-func psi= 0.5;   //( (x >0.5) && (y >0.5)  ) ? 0.5 : 0 ;
+//func psi= ( (x >0.5) && (y >0.5)  ) ? 0.5 : 0 ;
+func psi=0.5;
 real Itf = Tf/dt;
 
 
@@ -31,18 +51,23 @@ for(int i=1;i<=NB;i++){
 //vector coeff_d
 real[int] coeffd(NB);
 for (int i=0;i<NB;i++){
-	coeffd(i)= 1.0 /(20*(i+1)^(1.0/3));
+	coeffd(i)= 1.0 /((i+1)^(1.0/3));
 //	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
 }
+//Picard 
+real[int] er(Itf*50);
+int[int] itP(Itf*50);
+int warning=0; 
+real eps =0.1; //tol ur urold
+real errp;
+int maxItp=30;
 //________________________________________________________________//
-fespace Vh(th,P1);
+fespace Vh(th,P1,periodic=[[1,x],[3,x]]);
 Vh u,vh;
 Vh[int] uu1(NB);
 Vh[int] uu2(NB);
 Vh[int] uu3(NB);
 Vh[int] uu4(NB);
-Vh[int] uu5(NB);
-Vh[int] uu6(NB);
 Vh[int] uuold(NB);
 Vh[int] Qg(NB);
 Vh[int] Ql(NB);
@@ -50,19 +75,12 @@ Vh[int] Ql(NB);
 //Picard
 Vh[int] urold(NB);
 Vh[int]  ur(NB);
-real[int] er(Itf*2^6);
-int[int] itP(Itf*2^6);
-int warning=0; 
-real eps =0.1; //tol ur urold
-real errp;
-int maxItp=30;
 
 //Initialise u0
 for (m=0;m<NB;m++){
 	uuold[m]=0;
 	urold[m]=0;
 }
-
 
 //________________________________________________________________//
 //Function to calculate dt
@@ -128,7 +146,6 @@ macro Qlr(ur,m,Ql)
 //
 //________________________________________________________________//
 macro Picard
-	Qlr(urold,0,Ql)
 	smu1; 	ur[0]=u;
 	for (m=1; m<NB-1;m++){ smu2; ur[m] = u;}
 	smu3; 	ur[NB-1] = u;
@@ -151,15 +168,16 @@ macro Grad(u) [dx(u), dy(u)] //
 
 //Solve problem cluster size 1
 problem smu1 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh + dt*coeffd[0]*Grad(u)'*Grad(vh))
+  int2d(th,qft=qf1pTlump)(u*vh)
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
-- int1d(th,2) (dt*psi*vh)
+- int1d(th,3) (dt*psi*vh)
+//- int2d(th) (dt*psi*vh)
 ;
 
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh + dt*coeffd[m]*Grad(u)'*Grad(vh))
+  int2d(th,qft=qf1pTlump)(u*vh)
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[m]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[m]*vh)
 - int2d(th,qft=qf1pTlump)(dt*Qg[m]*vh)
@@ -167,15 +185,13 @@ problem smu2 (u , vh)=
 
 //Solve problem cluster size NB
 problem smu3 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh+ dt*coeffd[NB-1]*Grad(u)'*Grad(vh))
+  int2d(th,qft=qf1pTlump)(u*vh)
 - int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
 - int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
 ;
 
 //________________________________________________________________//
 //Time loop
-real umin;
-
 for ( int it = 0; it <Itf ; it++) 
 {
 	er[it]=1;
@@ -201,8 +217,7 @@ for ( int it = 0; it <Itf ; it++)
 for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
 cout << " t1  =   " << t1 << endl;
-cout <<" ________________________________________________________________"<<endl;
-
+cout <<" ________________________________________________________________" <<endl;
 //________________________________________________________________//
 
 //Time loop 2 
@@ -238,11 +253,14 @@ for ( int it = 0; it <Itf ; it++)
 	
 	//dt
 	t = t + dt;
-	//cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
+	//cout <<  "it " << it << " dt " << dt  << endl;
+
+
 }
 for (m=0; m<NB; m++){uu2[m]=ur[m];}
 real t2=t;
-cout <<" ________________________________________________________________"<<endl;
+cout << " t2  =   " << t2 << endl;
+cout <<" ________________________________________________________________"<<endl; 
 //________________________________________________________________//
 //Time loop 3
 dt=dt/2;
@@ -278,17 +296,18 @@ for ( int it = 0; it <Itf ; it++)
 	
 	//dt
 	t = t + dt;
-//	cout <<  "it " << it << " dt " << dt << endl;
+	//cout <<  "it " << it << " dt " << dt << endl;
 
 
 }
 for (m=0; m<NB; m++){uu3[m]=ur[m];}
 real t3=t;
-cout <<" ________________________________________________________________"<<endl;
+cout << " t3  =   " << t3 << endl;
+cout <<" ________________________________________________________________" <<endl;
 //________________________________________________________________//
 //________________________________________________________________//
 //Time loop 4
-dt=dt/2;
+/*dt=dt/2;
 Itf=Tf/dt;
 //itP.resize(Itf);
 t=0;
@@ -309,7 +328,7 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain2(urold,Qg)
 	Picard
 	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
 	//cout << "  Error Picard " << er[it] << endl;
 
 	}
@@ -321,150 +340,57 @@ for ( int it = 0; it <Itf ; it++)
 	
 	//dt
 	t = t + dt;
-//	cout <<  "it " << it << " dt " << dt << endl;
+	cout <<  "it " << it << " dt " << dt  << endl;
 
 
 }
 for (m=0; m<NB; m++){uu4[m]=ur[m];}
 real t4=t;
-cout <<" ________________________________________________________________"<<endl;
+*/
 //________________________________________________________________//
-//Time loop 5
-dt=dt/2;
-Itf=Tf/dt;
-//itP.resize(Itf);
-t=0;
-//Initialise u0
-for (m=0;m<NB;m++){
-	uuold[m]=0;
-	urold[m]=0;
-}
 
-for ( int it = 0; it <Itf ; it++) 
-{	
-	er[it]=1;
-	itP[it]=0;
-	while( (er[it] > eps) && (itP[it] < maxItp) )
-	{
-	Qloss(urold,Ql)
-	Qgain1(urold,Qg)
-	Qgain2(urold,Qg)
-	Picard
-	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
-	//cout << "  Error Picard " << er[it] << endl;
-
-	}
-	
-	for (m=0; m<NB; m++)
-	{
-		uuold[m]=ur[m];
-	}
-	
-	//dt
-	t = t + dt;
-//	cout <<  "it " << it << " dt " << dt << endl;
-
-
-}
-for (m=0; m<NB; m++){uu5[m]=ur[m];}
-real t5=t;
-cout <<" ________________________________________________________________"<<endl;
-//________________________________________________________________//
-//Time loop 6
-dt=dt/2;
-Itf=Tf/dt;
-//itP.resize(Itf);
-t=0;
-//Initialise u0
-for (m=0;m<NB;m++){
-	uuold[m]=0;
-	urold[m]=0;
-}
-
-for ( int it = 0; it <Itf ; it++) 
-{	
-	er[it]=1;
-	itP[it]=0;
-	while( (er[it] > eps) && (itP[it] < maxItp) )
-	{
-	Qloss(urold,Ql)
-	Qgain1(urold,Qg)
-	Qgain2(urold,Qg)
-	Picard
-	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
-	//cout << "  Error Picard " << er[it] << endl;
-
-	}
-	
-	for (m=0; m<NB; m++)
-	{
-		uuold[m]=ur[m];
-	}
-	
-	//dt
-	t = t + dt;
-//	cout <<  "it " << it << " dt " << dt << endl;
-
-
-}
-for (m=0; m<NB; m++){uu6[m]=ur[m];}
-real t6=t;
-cout <<" ________________________________________________________________"<<endl;
-//________________________________________________________________//
 //cout
 
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
 cout << "hmax " << th.hmax << endl;
-/*for (m=0;m<NB; m++){
-plot(th,uuold[m],wait=1,fill=true,value=true,cmm="u");
-}
-plot(th,uuold[NB-1],wait=1,fill=true,value= true, cmm="uNB");
-*/cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
+cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
 cout << "Nb of warnings EPicard > 15 : " << warning << endl;
 
-cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << " "<< t4 << endl;
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << " " << endl;
 
 //________________________________________________________________//
 real[int] err1(NB);
 real[int] err2(NB);
 real[int] err3(NB);
-real[int] err4(NB);
-real[int] err5(NB);
-real p1,p2,p3,p4; 
+real p1,p2;
 for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt( int2d(th) ((uu1[i] - uu6[i])^2) );
-	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu6[i])^2) );
-	err3[i] = sqrt ( int2d(th) ((uu3[i] - uu6[i])^2) );
-	err4[i] = sqrt ( int2d(th) ((uu4[i] - uu6[i])^2) );
-	err5[i] = sqrt ( int2d(th) ((uu5[i] - uu6[i])^2) );
-	cout << "err1("<<i+1<<")= " << err1[i] << endl;
-	cout << "err2("<<i+1<<")= " << err2[i] << endl;
-	cout << "err3("<<i+1<<")= " << err3[i] << endl;
-	cout << "err4("<<i+1<<")= " << err4[i] << endl;
-	cout << "err5("<<i+1<<")= " << err5[i] << endl;
+	//err1[i] = sqrt( int2d(th) ((uu1[i] - uu4[i])^2) );
+	//err2[i] = sqrt ( int2d(th) ((uu2[i] - uu4[i])^2) );
+	//err3[i] = sqrt ( int2d(th) ((uu3[i] - uu4[i])^2) );
 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+	
+	cout << "err1("<<i+1<<")= " << err1[i] << endl;
+	cout << "\t err2("<<i+1<<")= " << err2[i] << endl;
+	//cout << "\t \t err3("<<i+1<<")= " << err3[i] << endl;
+}
+
+for  (int i=0 ;i<NB; i++){ 
 	p1=log(err1[i]/err2[i]);
 	p1=p1/log(2.0);
+	cout << "p1(" << i+1 <<")= " << p1 << ";" <<endl;
+}
+/*
+for  (int i=0 ;i<NB; i++){ 
 	p2=log(err2[i]/err3[i]);
 	p2=p2/log(2.0);
-	p3=log(err3[i]/err4[i]);
-	p3=p3/log(2.0);
-	p4=log(err4[i]/err5[i]);
-	p4=p4/log(2.0);
-
-	cout << "\t p1(" << i+1 <<")= " << p1 << ";" <<endl;
 	cout << "\t p2(" << i+1 <<")= " << p2 << ";" <<endl;
-	cout << "\t p3(" << i+1 <<")= " << p3 << ";" <<endl;
-	cout << "\t p4(" << i+1 <<")= " << p4 << ";" <<endl;
+}*/
 
-}
-
-for (m=0;m<NB; m++){
-plot(th,uuold[m],wait=1,fill=true,value=true,cmm="u" + m );
-}
-
-
-
+plot(th,uu1[NB-1],value=true,fill=true);
+/*plot(th,uu2[NB-1],value=true,fill=true);
+plot(th,uu3[NB-1],value=true,fill=true);
+plot(th,uu4[NB-1],value=true,fill=true);
+*/

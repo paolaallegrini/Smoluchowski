@@ -1,6 +1,6 @@
-real L=1;
+real L=0.6;
 real r=0.2;
-int n=5*2*2;
+int n=5*2;
 
 real h=1.0/n;
 // Mesh
@@ -10,26 +10,26 @@ border c2 ( t=0,L)    {x=L; y=t; label=1;}
 border c3 ( t=L,0)    {x=t; y=L; label=1;}
 border c4 ( t=L,0)    {x=0; y=t; label=1;}
 border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
-mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+//mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
+
+
+mesh th = square(n,1,[x,y/50]);
 plot(th, wait= true, cmm = "Mesh");
-
-
 cout << "  -- mesh: Hmax = " << th.hmax << endl;
 
 //________________________________________________________________//
 //Parameters
-int NB=16, m=0;
-real dtmax=0.4, dt=dtmax, t=0, Tf=12;
+int NB=3, m=0;
+real dtmax=0.4, dt=dtmax, t=0, Tf=8;
 func psi=0.5;
 real Itf =Tf/dtmax;
 
 //matrice coag
-real alpha= 50.0;
+real alpha= 10.0;
 real[int,int] aa(NB,NB);
 for(int i=1;i<=NB;i++){
 	for(int j=1;j<=NB;j++){
 		aa(i-1,j-1)=alpha/(i*j);		
-		//aa(i-1,j-1)=1.0;
 	}
 }
 //vector coeff_d
@@ -39,7 +39,7 @@ for (int i=0;i<NB;i++){
 //	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
 }
 //________________________________________________________________//
-fespace Vh(th,P1);
+fespace Vh(th,P1,periodic=[[1,x],[3,x]]);
 Vh u,vh;
 Vh[int] uu(NB);
 Vh[int] uu2(NB);
@@ -50,36 +50,7 @@ Vh[int] Ql(NB);
 Vh[int] Qgold(NB);
 Vh[int] Qlold(NB);
 
-real umin=0;
 
-//Initialise u0
-for (m=0;m<NB;m++){
-	uuold[m]=0;
-}
-//________________________________________________________________//
-//Function to calculate dt
-func real calcdt(){
-	real dt1=dtmax;
-	real dtemp=dtmax;
-	for( int i=0; i<NB; i++){
-		//cout << "cluster size " << i << endl;
-		for (int id=0; id < th.nv ; id++){
-			if (Ql[i][][id] != 0){
-			//cout <<"in dt " << endl;
-			//cout << "Q=" << Ql[i][][id] << "uold = " << uuold[i][][id]<<endl;
-			 	dtemp=(uuold[i][][id])/(Ql[i][][id]);
-			 	if (dtemp<dt1){
-					//cout << "dtemp" << dtemp << endl;
-					//cout << "Q=" << Ql[i][][id] << "uold = " << uuold[i][][id]<<endl;
-
-					//cout << "    uold " << uuold[i][][id] << "Ql " << Ql << endl;
-					dt1=dtemp;
-				}
-			}	
-		} 
-	}
-	return dt1;
- }
 //________________________________________________________________//
 //Macro to calculate Qloss
 macro Qloss	
@@ -136,7 +107,7 @@ problem smu1 (u , vh)=
  int2d(th,qft=qf1pTlump)(u*vh)
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
-- int1d(th,2) (dt*psi*vh)
+- int1d(th,3) (dt*psi*vh)
 ;
 
 //Solve problem cluster size 2...NB-1
@@ -155,6 +126,10 @@ problem smu3 (u , vh)=
 ;
 //________________________________________________________________//
 //Time loop 1
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
 for ( int it = 0; it <Itf ; it++) 
 {	
 	//calculating Q
@@ -165,9 +140,6 @@ for ( int it = 0; it <Itf ; it++)
 	//Qgain1(uuold,Qgold)
 	//Calculating Qgain for assembly size NB
 	//Qgain2(uuold,Qgold)
-	
-	//dt=calcdt(); cout << "dt=" << dt << endl;
-	//cout << "dt=" << calcdt() << endl;
 
 	// monomeric form
 	smu1;
@@ -191,7 +163,6 @@ for ( int it = 0; it <Itf ; it++)
 
 	//dt
 	t = t + dt;
-	//cout << "IT " << it << endl;
 	cout <<  "it " << it << endl;
 
 }
@@ -199,7 +170,7 @@ real t1=t;
 cout << " t1 =   " << t1 << endl;
 cout << "________________________________________________________________" <<endl;
 //________________________________________________________________//
-/*
+
 //Time loop 2 
 dtmax=dtmax/2;
 dt=dtmax;
@@ -214,7 +185,6 @@ for ( int it = 0; it <Itf ; it++)
 	Qloss
 	//Qgain1(uuold,Qgold)
 	//Qgain2(uuold,Qgold)
-    cout << "dt=" << calcdt() << endl;
 	// monomeric form
 	smu1;	uu2[0]=u;
 	//Assemblies size 2...NB-1
@@ -227,14 +197,12 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain2(uu2,uuold,Qg)
 	smu3;	uu2[NB-1] = u;
 	
-	umin = uu[0][].min;
 	for (m=0; m<NB; m++){
 		uuold[m] = uu2[m];
-		if (umin > uu2[m][].min) { umin=uu2[m][].min;}
 	}
 	
 	t = t + dt;
-	cout <<  "it " << it <<" umin2 " << umin << endl;
+	cout <<  "it " << it  << endl;
 }
 real t2=t;
 cout << "________________________________________________________________" <<endl;
@@ -252,10 +220,7 @@ for (m=0;m<NB;m++){
 for ( int it = 0; it <Itf ; it++) 
 {	
 	Qloss
-	//Qgain1(uuold,Qgold)
-	//Qgain2(uuold,Qgold)
 
-	cout << "dt=" << calcdt() << endl;
 	// monomeric form
 	smu1;	uu3[0]=u;
 	//Assemblies size 2...NB-1
@@ -268,14 +233,12 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain2(uu3,uuold,Qg)
 	smu3;	uu3[NB-1] = u;
 	
-	umin = uu[0][].min;
 	for (m=0; m<NB; m++){
 		uuold[m] = uu3[m];
-		if (umin > uu3[m][].min) { umin=uu3[m][].min;}
 	}
 	
 	t = t + dt;
-	cout <<  "it " << it <<" umin2 " << umin << endl;
+	cout <<  "it " << it  << endl;
 
 }
 cout << "________________________________________________________________" <<endl;
@@ -296,12 +259,15 @@ real p;
 real ph;
 
 for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt( int2d(th) ((uu[i] - uu2[i])^2) );
-	err1h[i] = sqrt( int2d(th) ((uu[i] - uu3[i])^2) );
-	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+//	err1[i] = sqrt( int1d(th,2) ((uu[i] - uu2[i])^2) );
+//	err1h[i] = sqrt( int1d(th,2) ((uu[i] - uu3[i])^2) );
+//	err2[i] = sqrt ( int1d(th,2) ((uu2[i] - uu3[i])^2) );
+	err1[i]=abs(uu[i][][0] - uu2[i][][0]);
+	err2[i]=abs(uu2[i][][0] - uu3[i][][0]);
+
 
 	cout << "err1("<<i+1<<")= " << err1[i] << endl;
-	cout << "\t err1h("<<i+1<<")= " << err1h[i] << endl;
+	//cout << "\t err1h("<<i+1<<")= " << err1h[i] << endl;
 	cout << "\t \t err2("<<i+1<<")= " << err2[i] << endl;
 }
 
@@ -311,7 +277,7 @@ for  (int i=0 ;i<NB; i++){
 	cout << "p(" << i+1 <<")= " << p << ";" <<endl;
 }
 endl;
-
+/*
 for  (int i=0 ;i<NB; i++){ 
 	ph=log(err1h[i]/err2[i]);
 	ph=ph/log(2.0);

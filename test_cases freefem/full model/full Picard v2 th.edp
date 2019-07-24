@@ -1,16 +1,12 @@
 //________________________________________________________________//
-real L=1;
-
+real L=3;
+real r=0.2;
 int n=5*2;
 int n2=n*2;
 int n3=n2*2;
 real h=1.0/n;
-mesh th = square(n,L,[x,y/50]);
-mesh th2 = square(n2,L,[x,y/50]);
-mesh th3 = square(n3,L,[x,y/50]);
 
 // Mesh
-/*
 border c1 ( t=0,L)    {x=t; y=0; label=1;}
 border c2 ( t=0,L)    {x=L; y=t; label=1;}
 border c3 ( t=L,0)    {x=t; y=L; label=1;}
@@ -22,22 +18,13 @@ mesh th2=buildmesh( c1(n2) + c2(n2) + c3(n2) + c4(n2) + C(-n2) );
 //th2 = adaptmesh(th2,0.05,IsMetric=1,splitpbedge=1);
 mesh th3=buildmesh( c1(n3) + c2(n3) + c3(n3) + c4(n3) +C(-n3) );
 //th3 = adaptmesh(th3,0.05,IsMetric=1,splitpbedge=1);
-border C1(t=0, 2.*pi){x= 0.5*L + r2*cos(t); y= 0.5*L + r2*sin(t); label=1;}
-border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
-mesh th=buildmesh(C1(n) + C(-n));
-mesh th2=buildmesh(C1(n2) + C(-n2));
-mesh th3=buildmesh(C1(n3) + C(-n3));
-*/
-//plot(th);plot(th2);plot(th3);
-
 
 //________________________________________________________________//
 //Parameters
-int NB=5, m=0;
-real dtmax=0.0001, dt=dtmax, t=0, Tf=0.0005;
+int NB=3, m=0;
+real dtmax=0.2, dt=dtmax, t=0, Tf=4;
 real dtemp;
-//func psi= ( (x >0.5) && (y >0.5)  ) ? 0.5 : 0 ;
-func psi=0.5*x*x;
+func psi=0.5;
 real Itf = Tf/dt;
 
 
@@ -53,18 +40,18 @@ for(int i=1;i<=NB;i++){
 //vector coeff_d
 real[int] coeffd(NB);
 for (int i=0;i<NB;i++){
-	coeffd(i)= 1.0 /((i+1)^(1.0/3));
+	coeffd(i)= 1.0 /(20*(i+1)^(1.0/3));
 //	cout << "coeff("<<i<<")="<<coeffdd[i] <<endl;
 }
 //Picard 
 real[int] er(Itf);
 int[int] itP(Itf);
 int warning=0; 
-real eps =0.002; //tol ur urold
+real eps =0.2; //tol ur urold
 real errp;
 int maxItp=30;
 //________________________________________________________________//
-fespace Vh(th,P1,periodic=[[1,x],[3,x]]);
+fespace Vh(th,P1);
 Vh u,vh;
 Vh[int] uu1(NB);
 Vh[int] uuold(NB);
@@ -80,6 +67,7 @@ for (m=0;m<NB;m++){
 	uuold[m]=0;
 	urold[m]=0;
 }
+
 
 //________________________________________________________________//
 //Function to calculate dt
@@ -182,16 +170,15 @@ macro Grad(u) [dx(u), dy(u)] //
 
 //Solve problem cluster size 1
 problem smu1 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh + dt*coeffd[0]*Grad(u)'*Grad(vh) )
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[0]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
-- int1d(th,3) (dt*psi*vh)
-//- int2d(th) (dt*psi*vh)
+- int1d(th,2) (dt*psi*vh)
 ;
 
 //Solve problem cluster size 2...NB-1
 problem smu2 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh +dt*coeffd[m]*Grad(u)'*Grad(vh) )
 + int2d(th,qft=qf1pTlump)(dt*u*Ql[m]*vh)
 - int2d(th,qft=qf1pTlump) (uuold[m]*vh)
 - int2d(th,qft=qf1pTlump)(dt*Qg[m]*vh)
@@ -199,7 +186,7 @@ problem smu2 (u , vh)=
 
 //Solve problem cluster size NB
 problem smu3 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
+  int2d(th,qft=qf1pTlump)(u*vh +dt*coeffd[NB-1]*Grad(u)'*Grad(vh) )
 - int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
 - int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
 ;
@@ -219,7 +206,7 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain2(urold,Qg)
 	Picard
 	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
 	}
 	
 	umin = ur[0][].min;
@@ -231,15 +218,14 @@ for ( int it = 0; it <Itf ; it++)
 	
 	//dt
 	t = t + dt;
-	//cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
+	cout <<  "it " << it << " dt " << dt << " umin " << umin << endl;
 }
 for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
 cout << " t1  =   " << t1 << endl;
-cout <<" ________________________________________________________________" <<endl;
 //________________________________________________________________//
 //________________________________________________________________//
-fespace Vh2(th2,P1,periodic=[[1,x],[3,x]]);
+fespace Vh2(th2,P1);
 Vh2 u2,vh2;
 Vh2[int] uu2(NB);
 Vh2[int] uuold2(NB);
@@ -255,6 +241,7 @@ for (m=0;m<NB;m++){
 	uuold2[m]=0;
 	urold2[m]=0;
 }
+
 
 //________________________________________________________________//
 //Function to calculate dt
@@ -340,16 +327,15 @@ macro Picard2(urold,ur)
 //
 //________________________________________________________________//
 problem smu12 (u2 , vh2)= 
- int2d(th2,qft=qf1pTlump)(u2*vh2)
+ int2d(th2,qft=qf1pTlump)(u2*vh2 + dt*coeffd[0]*Grad(u2)'*Grad(vh2) )
 - int2d(th2,qft=qf1pTlump) (uuold2[0]*vh2)
 + int2d(th2,qft=qf1pTlump)(dt*u2*Ql2[0]*vh2)
-- int1d(th2,3) (dt*psi*vh2)
-//- int2d(th2) (dt*psi*vh2)
+- int1d(th2,2) (dt*psi*vh2)
 ;
 
 //Solve problem cluster size 2...NB-1
 problem smu22 (u2 , vh2)= 
- int2d(th2,qft=qf1pTlump)(u2*vh2)
+ int2d(th2,qft=qf1pTlump)(u2*vh2  + dt*coeffd[m]*Grad(u2)'*Grad(vh2))
 - int2d(th2,qft=qf1pTlump) (uuold2[m]*vh2)
 + int2d(th2,qft=qf1pTlump)(dt*u2*Ql2[m]*vh2)
 - int2d(th2,qft=qf1pTlump)(dt*Qg2[m]*vh2)
@@ -357,7 +343,7 @@ problem smu22 (u2 , vh2)=
 
 //Solve problem cluster size NB
 problem smu32 (u2 , vh2)=
- int2d(th2,qft=qf1pTlump)(u2*vh2)
+ int2d(th2,qft=qf1pTlump)(u2*vh2  + dt*coeffd[NB-1]*Grad(u2)'*Grad(vh2))
 - int2d(th2,qft=qf1pTlump) (uuold2[NB-1]*vh2)
 - int2d(th2,qft=qf1pTlump) (dt*Qg2[NB-1]*vh2)
 ;
@@ -377,7 +363,7 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain22(urold2,Qg2)
 	Picard2(urold2,ur2)
 	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
 	}
 	
 	umin2 = ur2[0][].min;
@@ -389,7 +375,7 @@ for ( int it = 0; it <Itf ; it++)
 	
 	//dt
 	t = t + dt;
-	//cout <<  "it " << it << " dt " << dt << " umin2 " << umin << endl;
+	cout <<  "it " << it << " dt " << dt << " umin2 " << umin << endl;
 }
 for (m=0; m<NB; m++){uu2[m]=ur2[m];}
 real t2=t;
@@ -397,7 +383,7 @@ cout << " t2  =   " << t2 << endl;
 cout <<" ________________________________________________________________" <<endl;
 //________________________________________________________________//
 //________________________________________________________________//
-fespace Vh3(th3,P1,periodic=[[1,x],[3,x]]);
+fespace Vh3(th3,P1);
 Vh3 u3,vh3;
 Vh3[int] uu3(NB);
 Vh3[int] uuold3(NB);
@@ -413,6 +399,8 @@ for (m=0;m<NB;m++){
 	uuold3[m]=0;
 	urold3[m]=0;
 }
+
+
 //________________________________________________________________//
 //Function to calculate dt
 
@@ -498,16 +486,15 @@ macro Picard3(urold,ur)
 //________________________________________________________________//
 //Solve problem cluster size 1
 problem smu13 (u3 , vh3)= 
- int2d(th3,qft=qf1pTlump)(u3*vh3)
+ int2d(th3,qft=qf1pTlump)(u3*vh3  + dt*coeffd[0]*Grad(u3)'*Grad(vh3))
 - int2d(th3,qft=qf1pTlump) (uuold3[0]*vh3)
 + int2d(th3,qft=qf1pTlump)(dt*u3*Ql3[0]*vh3)
-- int1d(th3,3) (dt*psi*vh3)
-//- int2d(th3) (dt*psi*vh3)
+- int1d(th3,2) (dt*psi*vh3)
 ;
 
 //Solve problem cluster size 2...NB-1
 problem smu23 (u3 , vh3)= 
- int2d(th3,qft=qf1pTlump)(u3*vh3)
+ int2d(th3,qft=qf1pTlump)(u3*vh3  + dt*coeffd[m]*Grad(u3)'*Grad(vh3))
 - int2d(th3,qft=qf1pTlump) (uuold3[m]*vh3)
 + int2d(th3,qft=qf1pTlump)(dt*u3*Ql3[m]*vh3)
 - int2d(th3,qft=qf1pTlump)(dt*Qg3[m]*vh3)
@@ -515,7 +502,7 @@ problem smu23 (u3 , vh3)=
 
 //Solve problem cluster size NB
 problem smu33(u3 , vh3)=
- int2d(th3,qft=qf1pTlump)(u3*vh3)
+ int2d(th3,qft=qf1pTlump)(u3*vh3  + dt*coeffd[NB-1]*Grad(u3)'*Grad(vh3))
 - int2d(th3,qft=qf1pTlump) (uuold3[NB-1]*vh3)
 - int2d(th3,qft=qf1pTlump) (dt*Qg3[NB-1]*vh3)
 ;
@@ -534,19 +521,20 @@ for ( int it = 0; it <Itf ; it++)
 	Qgain13(urold3,Qg3)
 	Qgain23(urold3,Qg3)
 	Picard3(urold3,ur3)
-
 	itP[it]= itP[it] +1;
-	//cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
+	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
 	}
 	
-	umin3 = ur3[0][].min;
+	umin3 = uu3[0][].min;
 	for (m=0; m<NB; m++){
-		uuold3[m] = ur3[m];
+		uuold3[m] = uu3[m];
 		if (umin3 > uu3[m][].min) { umin3=uu3[m][].min;}
 	}
-
+	
+	//dt
 	t = t + dt;
-	//cout <<  "it " << it <<" umin3 " << umin3 << endl;
+	//cout << "IT " << it << endl;
+	cout <<  "it " << it <<" umin3 " << umin3 << endl;
 
 }
 real t3=t;
@@ -556,13 +544,13 @@ for (m=0; m<NB; m++){uu3[m]=ur3[m];}
 cout <<" ________________________________________________________________" <<endl;
 //________________________________________________________________//
 //________________________________________________________________//
-/*plot(th,uu1[0],value=true,fill=true);
-plot(th2,uu2[0],value=true,fill=true);
-plot(th3,uu3[0],value=true,fill=true);
-plot(th,uu1[NB-1],value=true,fill=true);
-plot(th2,uu2[NB-1],value=true,fill=true);
-plot(th3,uu3[NB-1],value=true,fill=true);
-*/
+plot(th,uu1[0],value=true,cmm="u1");
+plot(th2,uu2[0],value=true,cmm="u1");
+plot(th3,uu3[0],value=true,cmm="u1");
+plot(th,uu1[NB-1],value=true,cmm="uNB");
+plot(th2,uu2[NB-1],value=true,cmm="uNB");
+plot(th3,uu3[NB-1],value=true,cmm="uNB");
+
 cout << "Number vertices : " << th.nv << endl;
 cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
 
@@ -572,8 +560,8 @@ real[int] err2(NB);
 real[int] p(NB);
 
 for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt(  int2d(th) ((uu1[i] - uu2[i])^2) );
-	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+	err1[i] = sqrt( int2d(th,qft=qf1pTlump) ((uu1[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th,qft=qf1pTlump) ((uu2[i] - uu3[i])^2) );
 
 	cout << "err1("<<i+1<<")= " << err1[i] << endl;
 	cout << "err2("<<i+1<<")= " << err2[i] << endl;
@@ -590,7 +578,10 @@ for  (int i=0 ;i<NB; i++){
 
 
 
- 
+
+
+
+
 
 
 
@@ -730,7 +721,7 @@ real t4=t;
 
 cout << "Number vertices : " << th.nv << endl;
 cout << "Iteration : " << Itf-1 << "   Tf =   " << t << endl;
-cout << "hmax^2 " << (th3.hmin)^2 << endl;
+cout << "hmax " << th.hmax << endl;
 cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
 cout << "Nb of warnings EPicard > 15 : " << warning << endl;
 
