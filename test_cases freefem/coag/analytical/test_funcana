@@ -1,0 +1,48 @@
+func real facto(int n){
+
+  int c,fact = 1.0;
+  for (c = 1; c <= n; c++){
+    fact = fact * c;
+  } 
+  return fact;
+}
+
+//K=i*j
+func real uvrai1(real m, real t){
+
+	real u=(m^(m-3))/facto(m-1);
+
+	if (t<=1){
+	u=u*(t^(m-1))*exp(-m*t);
+	}
+	if (t>1){
+	u=u*exp(-t)/t;
+	}
+	return u;	
+}
+
+//K=i+j
+func real uvrai2(real m, real t){
+
+	real u=1.0;
+	u=u*1.0/m*(m*(1-exp(-t)))^(m-1);
+	u=u*exp(-t)* exp( -m*( 1 - exp(-t) ) );
+	return u;	
+}
+
+//K=1
+func real uvrai3(real m, real t){
+
+	real u=(1 + t/2)^(-2);
+	u=u*( t/(t+1) )^(m-1);
+	return u;	
+}
+
+int NB=16;
+real t=1.0;
+for (int m=1; m<=NB;m++){
+//cout << "1/fact " << 1/facto(m-1) << endl;
+cout << m <<" : u1 = " <<uvrai3(m,t) << "  u2 = " << uvrai2(m,t) << "  u3 =  " << uvrai1(m,t) <<endl;
+
+}
+cout << "t " << t <<endl; 
