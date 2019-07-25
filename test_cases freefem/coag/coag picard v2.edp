@@ -12,7 +12,7 @@ border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
 mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 //Parameters
-int NB=16, m=0;
+int NB=1, m=0;
 real dtmax=0.16, dt=dtmax, t=0, Tf=12;
 real dtemp;
 func psi=0.5;

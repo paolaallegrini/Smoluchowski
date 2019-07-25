@@ -1,7 +1,6 @@
-//________________________________________________________________//
 // Mesh
 real L=1;
-int n=5*2*2;
+int n=5*2*2*2*2;
 real h=1.0/n;
 mesh th = square(n,1,[x,y/50]);
 //plot(th);
@@ -11,8 +10,8 @@ mesh th = square(n,1,[x,y/50]);
 //________________________________________________________________//
 
 //Parameters
-int NB=10, m=0;
-real dtmax=0.5, dt=dtmax, t=0, Tf=1.0;
+int NB=50, m=0;
+real dtmax=0.4, dt=dtmax, t=0, Tf=2;
 real Itf = Tf/dt;
 func psi=0.5;
 
@@ -54,23 +53,22 @@ func real uvrai3(real m, real t){
 	u=u*( t/(t+1) )^(m-1);
 	return u;	
 }
-func real uvrai3(real m, real t){
 
-	real u=(t+2)^(-2);
+func real uvrai33(real m, real t){
+
+	real u=4*m*(t+2)^(-2);
 	u=u*( t/(t+2) )^(m-1);
-	u=u*(1.0/(4*m));
+	//u=u*(1.0/(m));
 	return u;	
 }
-
 
 //matrice coag
 real alpha= 10.0;
 real[int,int] aa(NB,NB);
 for(int i=1;i<=NB;i++){
 	for(int j=1;j<=NB;j++){
-		//aa(i-1,j-1)=alpha/(i*j);
 		//aa(i-1,j-1)=(i*j);			
-		aa(i-1,j-1)=1.0;
+		aa(i-1,j-1)=1.0/j;
 		//(i-1,j-1)= i+j;
 
 	}
@@ -99,8 +97,8 @@ Vh[int]  ur(NB);
 
 //Initialise u0
 for (m=0;m<NB;m++){
-	uuold[m]= uvrai1(m+1,0);
-	urold[m]=uvrai1(m+1,0);
+	uuold[m]= uvrai33(m+1,0);
+	urold[m]=uvrai33(m+1,0);
 }
 
 
@@ -110,67 +108,33 @@ for (m=0;m<NB;m++){
 //Macro to calculate Qloss 
 	//add after *uold[m]
 macro Qloss(uold,Ql)	
-for (m=0;m<NB-1;m++){
+for (m=0;m<NB;m++){
 		Vh sum=0;	
 		for (int m2=0;m2<NB;m2++){
 			sum = sum + aa(m,m2)*uold[m2];	
 		}
 		Ql[m]=sum;
 	}
-	Ql[NB-1]=0;
 //
 
 //________________________________________________________________//
 // macros to calculate Qgain
 macro Qgain1(uold,Qg)
-	for (m=2;m<NB;m++){
+	for (m=2;m<=NB;m++){
 		Vh sum=0;	
 		for (int m2=1;m2<m;m2++){
 			sum = sum + aa(m2-1,m-m2-1)*uold[m2-1]*uold[m-m2-1];
 		}
-		Qg[m-1]=0.5*sum;
+		Qg[m-1]=sum;
 	}
 
 //
 
-//ur and uold
-macro Qgain2(ur,Qg)
-	Vh sum=0;
-	for (int j=1; j<=NB;j++){
-		for (int k=1;k<NB;k++){
-			if((j + k)>=NB){	
-				sum = sum + aa(j-1,k-1)*ur[j-1]*ur[k-1];
-			}	
-		}
-		Qg[NB-1]=0.5*sum;
-	}
-//
 //________________________________________________________________//
-// for one index
-macro Qg1(ur,m,Qg)
-{
-		Vh sum=0;	
-		for (int m2=1;m2<m;m2++){
-			sum = sum + aa(m2-1,m-m2-1)*ur[m2-1]*ur[m-m2-1];
-		}
-		Qg[m-1]=0.5*sum;
-}
-//
-
-macro Qlr(ur,m,Ql)
-{
-		Vh sum=0;	
-		for (int m2=0;m2<NB;m2++){
-			sum = sum + aa(m,m2)*ur[m2];	
-		}
-		Ql[m]=sum;
-}
-//
 //________________________________________________________________//
 macro Picard
 	smu1; 	ur[0]=u;
-	for (m=1; m<NB-1;m++){ smu2; ur[m] = u;}
-	smu3; 	ur[NB-1] = u;
+	for (m=1; m<NB;m++){ smu2; ur[m] = u;}
 
 
 	er[it]=int2d(th) ( ((ur[0] - urold[0])^2)/ ( (urold[0])^2 ? (urold[0])^2: 1) );
@@ -204,12 +168,6 @@ problem smu2 (u , vh)=
 - int2d(th,qft=qf1pTlump)(dt*Qg[m]*vh)
 ;
 
-//Solve problem cluster size NB
-problem smu3 (u , vh)= 
-  int2d(th,qft=qf1pTlump)(u*vh)
-- int2d(th,qft=qf1pTlump) (uuold[NB-1]*vh)
-- int2d(th,qft=qf1pTlump) (dt*Qg[NB-1]*vh)
-;
 
 //________________________________________________________________//
 //Time loop
@@ -221,7 +179,6 @@ for ( int it = 0; it <Itf ; it++)
 	{
 	Qloss(urold,Ql)
 	Qgain1(urold,Qg)
-	Qgain2(urold,Qg)
 	Picard
 	itP[it]= itP[it] +1;
 	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
@@ -242,24 +199,18 @@ Itf=Tf/dt;
 t=0; 
 //Initialise u0
 for (m=0;m<NB;m++){
-	uuold[m]= uvrai1(m+1,0);
-	urold[m]=uvrai1(m+1,0);
+	uuold[m]= uvrai33(m+1,0);
+	urold[m]=uvrai33(m+1,0);
 }
 
 for ( int it = 0; it <Itf ; it++) 
 {
 	er[it]=1;
-	itP[it]=0;func real uvrai3(real m, real t){
-
-	real u=(1 + t/2)^(-2);
-	u=u*( t/(t+1) )^(m-1);
-	return u;	
-}
+	itP[it]=0;
 	while( (er[it] > eps) && (itP[it] < maxItp) )
 	{
 	Qloss(urold,Ql)
 	Qgain1(urold,Qg)
-	Qgain2(urold,Qg)
 	Picard
 	itP[it]= itP[it] +1;
 	cout << "ItP " << itP[it]<< "  Error Picard " << er[it] << endl;
@@ -286,11 +237,11 @@ real[int] err11(NB);
 real[int] err2(NB);
 real p1;
 for (int i=0 ;i<NB; i++){ 
-	err11[i] = sqrt( (uu1[i][][0] - uvrai3(i+1,Tf))^2) ;
-	err2[i] = sqrt ( ((uu2[i][][0] - uvrai3(i+1,Tf))^2) );
+	err11[i] = sqrt( (uu1[i][][0] - uvrai33(i+1,Tf))^2) ;
+	err2[i] = sqrt ( ((uu2[i][][0] - uvrai33(i+1,Tf))^2) );
 	p1=log(err11[i]/err2[i]);
 	p1=p1/log(2.0);
-	cout << "p=  " << p1 << " \t uvrai("<<i+1<<")=" <<  uvrai3(i+1,Tf) << "  u1 = " << uu1[i][][0] <<
+	cout << "p=  " << p1 << " \t uvrai("<<i+1<<")=" <<  uvrai33(i+1,Tf) << "  u1 = " << uu1[i][][0] <<
 	 "  u2 = " << uu2[i][][0] <<  endl;
 
 	//cout << "err1("<<i+1<<")= " << err1[i] << "   err2("<<i+1<<")= " << err2[i] << endl;

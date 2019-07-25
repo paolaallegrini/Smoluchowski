@@ -27,7 +27,7 @@ mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
 //Parameters
 int NB=10, N0=8,m,it=0;
 bool b=true;
-real dtmax=0.2, dt=dtmax,dt2=dtmax, t=0, Tf=10;
+real dtmax=0.4, dt=dtmax,dt2=dtmax, t=0, Tf=100;
 real mass,kc=0.7,tk=Tf;
 
 func psi=( (x >0.5) && (y > 0.6) ) ? 0.5 : 0;
@@ -176,7 +176,7 @@ macro Qgain1(uuold,Qg)
 macro Qgain2(uuold,Qg)
 {
 	Vh sum=0;
-	for (int j=1; j<=NB;j++){
+	for (int j=1; j<NB;j++){
 		for (int k=1;k<NB;k++){
 			if((j + k)>=NB){	
 				sum = sum + aa(j-1,k-1)*uuold[j-1]*uuold[k-1];
@@ -224,7 +224,7 @@ problem smu3 (u , vh)=
 problem smu13 (u , vh)= 
  int2d(th,qft=qf1pTlump)(u*vh + dt*gamma*coeffd[0]*Grad(u)'*Grad(vh))
 - int2d(th,qft=qf1pTlump) (uuold[0]*vh)
-+ int2d(th,qft=qf1pTlump)( dt*( delta*Ql1[0] + (1-delta)*Ql2[0] )*vh)
++ int2d(th,qft=qf1pTlump)( dt*( delta*Ql1[0] + (1-delta)*Ql2[0] )*vh) 
 + int2d(th,qft=qf1pTlump)(dt*(1-gamma)*coeffd[0]*Grad(uu2[0])'*Grad(vh))
 - int1d(th,2) (dt*psi*vh)
 ;
