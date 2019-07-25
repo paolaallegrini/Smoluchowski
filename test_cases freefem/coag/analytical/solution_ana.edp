@@ -11,8 +11,8 @@ mesh th = square(n,1,[x,y/50]);
 //________________________________________________________________//
 
 //Parameters
-int NB=10, m=0;
-real dtmax=0.5, dt=dtmax, t=0, Tf=1.0;
+int NB=25, m=0;
+real dtmax=0.1, dt=dtmax, t=0, Tf=4;
 real Itf = Tf/dt;
 func psi=0.5;
 
@@ -54,13 +54,14 @@ func real uvrai3(real m, real t){
 	u=u*( t/(t+1) )^(m-1);
 	return u;	
 }
-func real uvrai3(real m, real t){
+func real uvrai33(real m, real t){
 
-	real u=(t+2)^(-2);
+	real u=4*(t+2)^(-2);
 	u=u*( t/(t+2) )^(m-1);
-	u=u*(1.0/(4*m));
+	u=u*(1.0/(m));
 	return u;	
 }
+
 
 
 //matrice coag
@@ -286,13 +287,19 @@ real[int] err11(NB);
 real[int] err2(NB);
 real p1;
 for (int i=0 ;i<NB; i++){ 
-	err11[i] = sqrt( (uu1[i][][0] - uvrai3(i+1,Tf))^2) ;
-	err2[i] = sqrt ( ((uu2[i][][0] - uvrai3(i+1,Tf))^2) );
+	err11[i] = sqrt( (uu1[i][][0] - uvrai33(i+1,Tf))^2) ;
+	err2[i] = sqrt ( ((uu2[i][][0] - uvrai33(i+1,Tf))^2) );
 	p1=log(err11[i]/err2[i]);
 	p1=p1/log(2.0);
-	cout << "p=  " << p1 << " \t uvrai("<<i+1<<")=" <<  uvrai3(i+1,Tf) << "  u1 = " << uu1[i][][0] <<
+	cout << "p=  " << p1 << " \t uvrai("<<i+1<<")=" <<  uvrai33(i+1,Tf) << "  u1 = " << uu1[i][][0] <<
 	 "  u2 = " << uu2[i][][0] <<  endl;
 
 	//cout << "err1("<<i+1<<")= " << err1[i] << "   err2("<<i+1<<")= " << err2[i] << endl;
 ;
+}
+
+for (int i=0 ;i<NB; i++){ 
+
+	cout << " \t uvrai("<<i+1<<")=" <<  uvrai3(i+1,Tf) << "  \t u2 = "
+ 	<< uvrai33(i+1,Tf) <<  endl;
 }
