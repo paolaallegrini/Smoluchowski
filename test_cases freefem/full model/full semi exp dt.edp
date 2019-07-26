@@ -25,10 +25,11 @@ mesh th=buildmesh( c1(n) + c2(n) + c3(n) + c4(n) + C(-n) );
 
 //________________________________________________________________//
 //Parameters
-int NB=16, N1=10,m,it=0;
+int NB=5, N1=4,m,it=0;
 bool b=true;
-real dtmax=0.2, dt=dtmax, t=0, Tf=2;
-real mass,kc=0.7,tk=Tf;
+real dtmax=0.05, dt=dtmax, t=0, Tf=4;
+real mass;
+int Itf=Tf/dt;
 
 func psi=( (x >0.5) && (y > 0.5) ) ? 0.5 : 0;
 
@@ -52,6 +53,7 @@ for (int i=0;i<NB;i++){
 fespace Vh(th,P1);
 Vh u,vh;
 Vh[int] uu(NB);
+Vh[int] uu1(NB);
 Vh[int] uu2(NB);
 Vh[int] uu3(NB);
 Vh[int] uuold(NB);
@@ -156,8 +158,7 @@ problem smu3 (u , vh)=
 //________________________________________________________________//
 //Time loop 1
 
-while (t<Tf)
-{	
+for(int it=0; it < Itf; it++){	
 	//calculating Q
 	
 	//Calculating Qloss
@@ -171,13 +172,10 @@ while (t<Tf)
 	//cout << "dt=" << calcdt() << endl;
 
 	// monomeric form
-	if (b){
 	calcmass
 	cout << "mass= " << mass << endl; 
-	if (mass > kc ) { b=false; tk=t; cout << "tk=" << tk <<endl;}
-	}
-	if(b){smu1;	uu[0]=u;}
-	else{smu11;	uu[0]=u;}
+	smu1;	uu[0]=u;
+
 
 	//Assemblies size 2...NB-1
 	for (m=1; m<NB-1;m++)
@@ -196,25 +194,138 @@ while (t<Tf)
 	
 	//dt
 	t = t + dt;
-	it=it +1;
 	cout <<  "it " << it << endl;
 }
+for (m=0; m<NB; m++){uu1[m] = uu[m];}
+
 real t1=t;
 cout << " t1 =   " << t1 << endl;
-cout << " tk = " << tk << endl;
-
-Vh u11; 
-
-for(int id=0; id< th.nv; id++){
-	if(uu[NB-1][][id] > 0.3){
-		u11[][id]=uu[NB-1][][id];
-	}
-	else{
-		u11[][id]=0;
-	}
+cout <<"________________________________________________________________"<<endl;
+//________________________________________________________________//
+//Time loop 2
+dtmax=dtmax/2;
+dt=dtmax;
+Itf=Tf/dt;
+t=0;
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
 }
-cout << "TF= " << t << endl; 
+for(int it=0; it < Itf; it++){	
+	//calculating Q
+	
+	//Calculating Qloss
+	Qloss
+	//Calculating Qgain for assemblies size 2...NB-1
+	Qgain1
+	//Calculating Qgain for assembly size NB
+	Qgain2
+	
+	dt=calcdt(); cout << "dt=" << dt << endl;
+	//cout << "dt=" << calcdt() << endl;
+
+	// monomeric form
+	calcmass
+	cout << "mass= " << mass << endl; 
+	smu1;	uu[0]=u;
+
+
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2;
+		uu[m] = u;
+	}
+
+	//Assembly size NB
+	smu3;
+	uu[NB-1] = u;
+	
+	for (m=0; m<NB; m++){
+		uuold[m] = uu[m];
+	}
+	
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << endl;
+}
+for (m=0; m<NB; m++){uu2[m] = uu[m];}
+real t2=t;
+cout << " t2 =   " << t2 << endl;
+cout <<"________________________________________________________________"<<endl;
+//________________________________________________________________//
+//Time loop 3
+dtmax=dtmax/2;
+dt=dtmax;
+Itf=Tf/dt;
+t=0;
+//Initialise u0
+for (m=0;m<NB;m++){
+	uuold[m]=0;
+}
+for(int it=0; it < Itf; it++){	
+	//calculating Q
+	
+	//Calculating Qloss
+	Qloss
+	//Calculating Qgain for assemblies size 2...NB-1
+	Qgain1
+	//Calculating Qgain for assembly size NB
+	Qgain2
+	
+	dt=calcdt(); cout << "dt=" << dt << endl;
+	//cout << "dt=" << calcdt() << endl;
+
+	// monomeric form
+	calcmass
+	cout << "mass= " << mass << endl; 
+	smu1;	uu[0]=u;
+
+
+	//Assemblies size 2...NB-1
+	for (m=1; m<NB-1;m++)
+	{
+		smu2;
+		uu[m] = u;
+	}
+
+	//Assembly size NB
+	smu3;
+	uu[NB-1] = u;
+	
+	for (m=0; m<NB; m++){
+		uuold[m] = uu[m];
+	}
+	
+	//dt
+	t = t + dt;
+	cout <<  "it " << it << endl;
+}
+for (m=0; m<NB; m++){uu3[m] = uu[m];}
+real t3=t;
+cout << " t3 =   " << t3 << endl;
+cout <<"________________________________________________________________"<<endl;
+
+cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << endl;
+
+real[int] err1(NB);
+real[int] err2(NB);
+
+real p1; 
+for (int i=0 ;i<NB; i++){ 
+	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
+	cout << "\n err1("<<i+1<<")= " << err1[i] << "\t err2("<<i+1<<")= " << err2[i]<< endl;
+
+	p1=log(err1[i]/err2[i]);
+	p1=p1/log(2.0);
+	cout << "\t p1(" << i+1 <<")= " << p1 << ";" <<endl;
+
+
+}
+
+
+ 
 for (m=0;m<NB; m++){
 plot(th,uuold[m],wait=1,fill=true,value=true,cmm="u" + m );
 }
-plot(th,u11,wait=1,fill=true);

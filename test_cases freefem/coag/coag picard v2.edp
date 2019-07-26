@@ -12,8 +12,8 @@ border C(t=0, 2.*pi){x= 0.5*L + r*cos(t); y= 0.5*L + r*sin(t); label=2;}
 mesh th = buildmesh(c1(n) + c2(n) + c3(n) + c4(n) + C(-n));
 //________________________________________________________________//
 //Parameters
-int NB=1, m=0;
-real dtmax=0.16, dt=dtmax, t=0, Tf=12;
+int NB=3, m=0;
+real dtmax=0.2, dt=dtmax, t=0, Tf=4;
 real dtemp;
 func psi=0.5;
 real Itf = Tf/dt;
@@ -218,7 +218,7 @@ for (m=0; m<NB; m++){uu1[m]=ur[m];}
 real t1=t;
 cout << " t1  =   " << t1 << endl;
 //________________________________________________________________//
-/*
+
 //Time loop 2 
 dt=dt/2;
 Itf=Tf/dt;
@@ -347,7 +347,7 @@ for ( int it = 0; it <Itf ; it++)
 }
 for (m=0; m<NB; m++){uu4[m]=ur[m];}
 real t4=t;
-*/
+
 //________________________________________________________________//
 
 //cout
@@ -360,23 +360,36 @@ plot(th,uuold[NB-1],wait=1,fill=true,value= true, cmm="uNB");
 cout << "E Picard " << itP.min << " _ " << itP.max << " emax :  " <<er.max << endl;
 cout << "Nb of warnings EPicard > 15 : " << warning << endl;
 
-/*cout << " t1 t2 t3  =   " << t1 << " " << t2 << " "<< t3 << " "<< t4 << endl;
+cout << " t1 t2 t3 t4  =   " << t1 << " " << t2 << " "<< t3 << " "<< t4 << endl;
 
 //________________________________________________________________//
 real[int] err1(NB);
 real[int] err2(NB);
 real[int] err3(NB);
 for (int i=0 ;i<NB; i++){ 
-	err1[i] = sqrt( int2d(th) ((uu1[i] - uu2[i])^2) );
-	err2[i] = sqrt ( int2d(th) ((uu2[i] - uu3[i])^2) );
-	err3[i] = sqrt ( int2d(th) ((uu3[i] - uu4[i])^2) );
+	err1[i] = sqrt( int1d(th,2) ((uu1[i] - uu2[i])^2) );
+	err2[i] = sqrt ( int1d(th,2) ((uu2[i] - uu3[i])^2) );
+	err3[i] = sqrt ( int1d(th,2) ((uu3[i] - uu4[i])^2) );
 	
 	cout << "err1("<<i+1<<")= " << err1[i] << endl;
 	cout << "err2("<<i+1<<")= " << err2[i] << endl;
 	cout << "err3("<<i+1<<")= " << err3[i] << endl;
 }
-*/
 
+real p1,p2; 
+for  (int i=0 ;i<NB; i++){ 
+	p1=log(err1[i]/err2[i]);
+	p1=p1/log(2.0);
+	cout << "p1(" << i+1 <<")= " << p1 << ";" <<endl;
+}
 
+for  (int i=0 ;i<NB; i++){ 
+	p2=log(err2[i]/err3[i]);
+	p2=p2/log(2.0);
+	cout << "\t p2(" << i+1 <<")= " << p2 << ";" <<endl;
+}
+plot(th,uu1[NB-1],wait=1,fill=true,value=true,cmm="uu1 NB");
+plot(th,uu4[NB-1],wait=1,fill=true,value=true,cmm="uu4 NB"); 
 
-
+plot(th,uu4[0],wait=1,fill=true,value=true,cmm="uu4 1"); 
+plot(th,uu4[1],wait=1,fill=true,value=true,cmm="uu4 2"); 
